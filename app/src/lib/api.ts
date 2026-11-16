@@ -14,12 +14,30 @@ export type Account = {
   name: string;
   currency: string;
   source: 'manual' | 'scraper' | 'import';
+  external_id: string | null;
   is_liability: boolean;
   archived: boolean;
   notes: string | null;
+  details: AccountDetails | null;
   balance: number | null;
   balance_as_of: string | null;
   signed_balance: number;
+};
+
+/** Latest figures extracted from an uploaded report (pension, study fund, mortgage …). */
+export type AccountDetails = {
+  product_name?: string | null;
+  monthly_deposit?: number | null;
+  return_ytd_pct?: number | null;
+  return_12m_pct?: number | null;
+  fee_balance_pct?: number | null;
+  fee_deposit_pct?: number | null;
+  liquidity_date?: string | null;
+  monthly_payment?: number | null;
+  end_date?: string | null;
+  tracks?: { name: string; balance: number | null; interest_rate_pct: number | null; indexation: string | null; end_date: string | null }[];
+  highlights?: string[];
+  as_of?: string;
 };
 
 export type Snapshot = { as_of: string; balance: number };
@@ -96,6 +114,8 @@ export type NewAccount = {
   institution: string | null;
   ownerUserId: string | null;
   balance: number | null;
+  /** e.g. the last 4 digits of a card, used to match later uploads to this account */
+  externalId?: string | null;
 };
 
 export async function createAccount(a: NewAccount): Promise<string> {
@@ -109,6 +129,7 @@ export async function createAccount(a: NewAccount): Promise<string> {
         institution: a.institution,
         owner_user_id: a.ownerUserId,
         is_liability: KINDS[a.kind].liability,
+        external_id: a.externalId ?? null,
       })
       .select('id')
       .single(),

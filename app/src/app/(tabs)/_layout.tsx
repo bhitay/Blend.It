@@ -22,6 +22,8 @@ export default function TabsLayout() {
       }}
     >
       <Tabs.Screen name="index" options={{ title: 'סקירה', tabBarIcon: icon('pie-chart-outline') }} />
+      <Tabs.Screen name="insights" options={{ title: 'תובנות', tabBarIcon: icon('bulb-outline') }} />
+      <Tabs.Screen name="import" options={{ title: 'ייבוא', tabBarIcon: icon('cloud-upload-outline') }} />
       <Tabs.Screen name="accounts" options={{ title: 'חשבונות', tabBarIcon: icon('wallet-outline') }} />
       <Tabs.Screen name="settings" options={{ title: 'הגדרות', tabBarIcon: icon('settings-outline') }} />
     </Tabs>

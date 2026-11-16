@@ -1,6 +1,6 @@
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { Alert, Platform, View } from 'react-native';
+import { Alert, Platform, Pressable, View } from 'react-native';
 import { Button, Card, colors, ErrorText, Field, Loading, Screen, SectionTitle, Text, styles } from '@/components/ui';
 import {
   deleteAccount,
@@ -42,7 +42,7 @@ export default function AccountDetails() {
 
   if (!account) return error ? <ErrorText>{error}</ErrorText> : <Loading />;
 
-  const synced = account.source === 'scraper';
+  const imported = account.source === 'import';
   const sign = account.is_liability ? -1 : 1;
 
   async function saveBalance() {
@@ -66,9 +66,7 @@ export default function AccountDetails() {
       await deleteAccount(account!.id);
       router.back();
     };
-    const msg = synced
-      ? 'החשבון, התנועות וההיסטוריה יימחקו. אם הוא עדיין מוגדר בסנכרון, הוא ייווצר מחדש בסנכרון הבא.'
-      : 'החשבון וכל היסטוריית היתרות שלו יימחקו.';
+    const msg = imported ? 'החשבון, כל התנועות וההיסטוריה שלו יימחקו.' : 'החשבון וכל היסטוריית היתרות שלו יימחקו.';
     if (Platform.OS === 'web') {
       if (globalThis.confirm?.(msg)) run();
       return;
@@ -91,14 +89,14 @@ export default function AccountDetails() {
         </Text>
         <Text style={styles.muted}>
           {account.balance_as_of ? `עודכן ${formatDate(account.balance_as_of)}` : 'עוד לא הוזנה יתרה'}
-          {synced ? ' · מתעדכן אוטומטית' : ' · הזנה ידנית'}
+          {imported ? ' · מתעדכן מקבצים' : ' · הזנה ידנית'}
         </Text>
-        {synced && account.kind === 'credit_card' ? (
+        {imported && account.kind === 'credit_card' ? (
           <Text style={styles.muted}>הסכום הוא החיובים שעוד לא ירדו מהבנק.</Text>
         ) : null}
       </Card>
 
-      {!synced ? (
+      {account.kind !== 'credit_card' ? (
         <Card>
           <Field
             label={account.is_liability ? 'עדכון יתרת חוב' : 'עדכון יתרה'}
@@ -118,15 +116,28 @@ export default function AccountDetails() {
           <SectionTitle>תנועות אחרונות</SectionTitle>
           <Card style={{ gap: 0, paddingVertical: 4 }}>
             {txns.map((t, i) => (
-              <View
+              <Pressable
                 key={t.id}
-                style={[styles.row, { paddingVertical: 10 }, i > 0 && { borderTopWidth: 1, borderTopColor: colors.border }]}
+                accessibilityRole="button"
+                accessibilityHint="שינוי סיווג"
+                onPress={() =>
+                  router.push({
+                    pathname: '/category',
+                    params: { description: t.description, category: t.category ?? '', amount: String(t.amount) },
+                  })
+                }
+                style={({ pressed }) => [
+                  styles.row,
+                  { paddingVertical: 10, opacity: pressed ? 0.6 : 1 },
+                  i > 0 && { borderTopWidth: 1, borderTopColor: colors.border },
+                ]}
               >
                 <View style={{ flex: 1, gap: 2 }}>
                   <Text numberOfLines={1}>{t.description}</Text>
                   <Text style={[styles.muted, { fontSize: 12 }]}>
                     {[
                       formatDate(t.date),
+                      t.category ?? 'לא מסווג',
                       t.status === 'pending' ? 'ממתין' : null,
                       t.installments ? `תשלום ${t.installments.number}/${t.installments.total}` : null,
                       t.original_currency && t.original_currency !== 'ILS' && t.original_amount != null
@@ -140,7 +151,7 @@ export default function AccountDetails() {
                 <Text style={{ fontWeight: '600', color: t.amount > 0 ? colors.positive : colors.text }}>
                   {formatMoney(t.amount, 'ILS', true)}
                 </Text>
-              </View>
+              </Pressable>
             ))}
           </Card>
         </>
