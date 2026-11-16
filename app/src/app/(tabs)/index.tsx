@@ -1,7 +1,6 @@
 import { router } from 'expo-router';
 import { RefreshControl, ScrollView, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import SyncStatusCard from '@/components/SyncStatusCard';
 import { Button, Card, colors, ErrorText, Loading, SectionTitle, Text, styles } from '@/components/ui';
 import { GROUPS, KINDS } from '@/lib/accountKinds';
 import { daysSince, formatMoney } from '@/lib/format';
@@ -21,7 +20,7 @@ export default function Overview() {
   const assets = accounts.filter((a) => !a.is_liability).reduce((s, a) => s + a.signed_balance, 0);
   const debts = accounts.filter((a) => a.is_liability).reduce((s, a) => s + a.signed_balance, 0);
   const netWorth = assets + debts;
-  const stale = accounts.filter((a) => a.source !== 'scraper' && (daysSince(a.balance_as_of) ?? Infinity) > STALE_DAYS);
+  const stale = accounts.filter((a) => (daysSince(a.balance_as_of) ?? Infinity) > STALE_DAYS);
 
   return (
     <SafeAreaView style={styles.screen} edges={['bottom']}>
@@ -47,8 +46,7 @@ export default function Overview() {
           <Card>
             <Text style={{ fontWeight: '700', fontSize: 18 }}>בואו נתחיל</Text>
             <Text style={styles.muted}>
-              הבנקים וכרטיסי האשראי יופיעו כאן לבד אחרי הסנכרון הראשון מהמחשב בבית. בינתיים אפשר להוסיף ידנית
-              פנסיה, קרן השתלמות, גמל, דירה ומשכנתא.
+              הוסיפו את החשבונות שלכם: עו"ש, פנסיה, קרן השתלמות, גמל, דירה ומשכנתא.
             </Text>
             <Button title="הוספת חשבון ראשון" onPress={() => router.push('/account/new')} />
           </Card>
@@ -77,8 +75,6 @@ export default function Overview() {
             </Card>
           </>
         )}
-
-        <SyncStatusCard />
 
         {stale.length > 0 ? (
           <Card style={{ backgroundColor: '#FFFAEB', borderColor: '#FEDF89' }}>

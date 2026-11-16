@@ -1,7 +1,0 @@
-node_modules/
-# Passwords live here — never commit
-config.json
-state.json
-sync.lock
-logs/
-screenshots/
