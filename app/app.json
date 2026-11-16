@@ -21,7 +21,13 @@
       "package": "com.blendit.app"
     },
     "web": {
-      "favicon": "./assets/favicon.png"
+      "favicon": "./assets/favicon.png",
+      "output": "single",
+      "name": "BlendIt",
+      "shortName": "BlendIt",
+      "lang": "he",
+      "themeColor": "#F4F5F7",
+      "backgroundColor": "#F4F5F7"
     },
     "plugins": [
       "expo-router",
