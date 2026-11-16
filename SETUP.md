@@ -17,7 +17,7 @@
 4. מבטלים אימות במייל (רק שניכם משתמשים):
    **Authentication → Sign In / Providers → Email**, מכבים את **Confirm email**, ולוחצים **Save**.
 5. מעתיקים שני ערכים לפתק, נשתמש בהם בצעד ג:
-   - **Project URL**: ב-**Project Settings → Data API** (נראה כמו `https://abcd1234.supabase.co`)
+   - **Project URL**: ב-**Project Settings → Data API**. מעתיקים רק עד `.supabase.co`, בלי `/rest/v1/` בסוף (נראה כמו `https://abcd1234.supabase.co`).
    - **Publishable key**: ב-**Project Settings → API Keys** (מתחיל ב-`sb_publishable_`)
 
 ## ב. העברת הקוד לענף הראשי (main)
