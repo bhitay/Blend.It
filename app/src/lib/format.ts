@@ -1,10 +1,18 @@
 const formatters = new Map<string, Intl.NumberFormat>();
 
-export function formatMoney(value: number, currency = 'ILS'): string {
-  let f = formatters.get(currency);
+/** Whole units by default; `exact` shows agorot/cents when the amount has them (transactions). */
+export function formatMoney(value: number, currency = 'ILS', exact = false): string {
+  const decimals = exact && Math.round(value * 100) % 100 !== 0 ? 2 : 0;
+  const cacheKey = `${currency}:${decimals}`;
+  let f = formatters.get(cacheKey);
   if (!f) {
-    f = new Intl.NumberFormat('he-IL', { style: 'currency', currency, maximumFractionDigits: 0 });
-    formatters.set(currency, f);
+    f = new Intl.NumberFormat('he-IL', {
+      style: 'currency',
+      currency,
+      minimumFractionDigits: decimals,
+      maximumFractionDigits: decimals,
+    });
+    formatters.set(cacheKey, f);
   }
   return f.format(value);
 }

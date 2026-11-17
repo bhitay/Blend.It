@@ -46,8 +46,7 @@ export default function Overview() {
           <Card>
             <Text style={{ fontWeight: '700', fontSize: 18 }}>בואו נתחיל</Text>
             <Text style={styles.muted}>
-              הוסיפו את החשבונות שלכם: עו"ש, פנסיה, קרן השתלמות, משכנתא. בשלב הבא הבנקים וכרטיסי האשראי יתעדכנו
-              אוטומטית.
+              הוסיפו את החשבונות שלכם: עו"ש, פנסיה, קרן השתלמות, גמל, דירה ומשכנתא.
             </Text>
             <Button title="הוספת חשבון ראשון" onPress={() => router.push('/account/new')} />
           </Card>

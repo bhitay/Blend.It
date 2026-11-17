@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import {
   ActivityIndicator,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -28,8 +29,12 @@ export const colors = {
 
 /** App text. Alignment follows the RTL layout direction (see app/_layout.tsx). */
 export function Text({ style, ...rest }: TextProps) {
-  return <RNText style={[styles.text, style]} {...rest} />;
+  return <RNText style={[styles.text, webAlign, style]} {...rest} />;
 }
+
+// On web each text node gets dir="auto", so a line starting with Latin letters or digits
+// ("SPOTIFY", "15/11/2026") would align left. Pin text to the right edge instead.
+const webAlign = Platform.OS === 'web' ? ({ textAlign: 'right' } as const) : null;
 
 export function Screen({
   children,

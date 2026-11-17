@@ -14,12 +14,30 @@ export type Account = {
   name: string;
   currency: string;
   source: 'manual' | 'scraper' | 'import';
+  external_id: string | null;
   is_liability: boolean;
   archived: boolean;
   notes: string | null;
+  details: AccountDetails | null;
   balance: number | null;
   balance_as_of: string | null;
   signed_balance: number;
+};
+
+/** Latest figures extracted from an uploaded report (pension, study fund, mortgage …). */
+export type AccountDetails = {
+  product_name?: string | null;
+  monthly_deposit?: number | null;
+  return_ytd_pct?: number | null;
+  return_12m_pct?: number | null;
+  fee_balance_pct?: number | null;
+  fee_deposit_pct?: number | null;
+  liquidity_date?: string | null;
+  monthly_payment?: number | null;
+  end_date?: string | null;
+  tracks?: { name: string; balance: number | null; interest_rate_pct: number | null; indexation: string | null; end_date: string | null }[];
+  highlights?: string[];
+  as_of?: string;
 };
 
 export type Snapshot = { as_of: string; balance: number };
@@ -96,6 +114,8 @@ export type NewAccount = {
   institution: string | null;
   ownerUserId: string | null;
   balance: number | null;
+  /** e.g. the last 4 digits of a card, used to match later uploads to this account */
+  externalId?: string | null;
 };
 
 export async function createAccount(a: NewAccount): Promise<string> {
@@ -109,20 +129,26 @@ export async function createAccount(a: NewAccount): Promise<string> {
         institution: a.institution,
         owner_user_id: a.ownerUserId,
         is_liability: KINDS[a.kind].liability,
+        external_id: a.externalId ?? null,
       })
       .select('id')
       .single(),
   ) as { id: string };
-  if (a.balance != null) await setBalance(row.id, a.balance);
+  if (a.balance != null) await setBalance(row.id, a.balance, KINDS[a.kind].liability);
   return row.id;
 }
 
-/** Records today's balance (overwrites an earlier entry from the same day). */
-export async function setBalance(accountId: string, balance: number, asOf = todayISO()): Promise<void> {
+/**
+ * Records today's balance (overwrites an earlier entry from the same day).
+ * Liabilities are stored as the positive amount owed; assets keep their sign
+ * (a bank account in overdraft is negative).
+ */
+export async function setBalance(accountId: string, balance: number, isLiability: boolean, asOf = todayISO()): Promise<void> {
+  const value = isLiability ? Math.abs(balance) : balance;
   check(
     await supabase
       .from('balance_snapshots')
-      .upsert({ account_id: accountId, as_of: asOf, balance: Math.abs(balance) }, { onConflict: 'account_id,as_of' }),
+      .upsert({ account_id: accountId, as_of: asOf, balance: value }, { onConflict: 'account_id,as_of' }),
   );
 }
 
@@ -140,4 +166,55 @@ function normalize(a: Account): Account {
     balance: a.balance == null ? null : Number(a.balance),
     signed_balance: Number(a.signed_balance ?? 0),
   };
+}
+
+// --- transactions & sync ----------------------------------------------------
+
+export type Transaction = {
+  id: string;
+  date: string;
+  processed_date: string | null;
+  amount: number;
+  original_amount: number | null;
+  original_currency: string | null;
+  description: string;
+  memo: string | null;
+  category: string | null;
+  installments: { number: number; total: number } | null;
+  status: 'completed' | 'pending';
+};
+
+export async function fetchTransactions(accountId: string, limit = 100): Promise<Transaction[]> {
+  const rows = check(
+    await supabase
+      .from('transactions')
+      .select('id, date, processed_date, amount, original_amount, original_currency, description, memo, category, installments, status')
+      .eq('account_id', accountId)
+      .order('date', { ascending: false })
+      .order('created_at', { ascending: false })
+      .limit(limit),
+  ) as Transaction[];
+  return rows.map((r) => ({
+    ...r,
+    amount: Number(r.amount),
+    original_amount: r.original_amount == null ? null : Number(r.original_amount),
+  }));
+}
+
+export type SyncStatus = {
+  institution: string;
+  label: string | null;
+  started_at: string;
+  finished_at: string | null;
+  status: 'running' | 'success' | 'error';
+  error_type: string | null;
+  error_message: string | null;
+  new_transactions: number;
+  last_success_at: string | null;
+};
+
+export async function fetchSyncStatus(householdId: string): Promise<SyncStatus[]> {
+  return check(
+    await supabase.from('sync_status').select('*').eq('household_id', householdId).order('institution'),
+  ) as SyncStatus[];
 }
