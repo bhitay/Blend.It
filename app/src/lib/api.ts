@@ -152,6 +152,22 @@ export async function setBalance(accountId: string, balance: number, isLiability
   );
 }
 
+export type AccountUpdate = Partial<{
+  name: string;
+  kind: AccountKind;
+  institution: string | null;
+  owner_user_id: string | null;
+  notes: string | null;
+  details: AccountDetails | null;
+}>;
+
+/** Edits an account. Changing the kind also updates whether it counts as a debt. */
+export async function updateAccount(id: string, changes: AccountUpdate): Promise<void> {
+  const row: Record<string, unknown> = { ...changes };
+  if (changes.kind) row.is_liability = KINDS[changes.kind].liability;
+  check(await supabase.from('accounts').update(row).eq('id', id));
+}
+
 export async function setArchived(accountId: string, archived: boolean): Promise<void> {
   check(await supabase.from('accounts').update({ archived }).eq('id', accountId));
 }

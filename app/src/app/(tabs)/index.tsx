@@ -1,5 +1,6 @@
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { router } from 'expo-router';
-import { RefreshControl, ScrollView, View } from 'react-native';
+import { Pressable, RefreshControl, ScrollView, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button, Card, colors, ErrorText, Loading, SectionTitle, Text, styles } from '@/components/ui';
 import { GROUPS, KINDS } from '@/lib/accountKinds';
@@ -55,11 +56,13 @@ export default function Overview() {
             <SectionTitle>לפי סוג</SectionTitle>
             <Card style={{ gap: 0, paddingVertical: 4 }}>
               {byGroup.map((g, i) => (
-                <View
+                <Pressable
                   key={g.id}
-                  style={[
+                  accessibilityRole="button"
+                  onPress={() => router.push({ pathname: '/group/[id]', params: { id: g.id } })}
+                  style={({ pressed }) => [
                     styles.row,
-                    { paddingVertical: 12 },
+                    { paddingVertical: 12, opacity: pressed ? 0.6 : 1 },
                     i > 0 && { borderTopWidth: 1, borderTopColor: colors.border },
                   ]}
                 >
@@ -70,7 +73,8 @@ export default function Overview() {
                   <Text style={{ fontWeight: '700', color: g.total < 0 ? colors.negative : colors.text }}>
                     {formatMoney(g.total)}
                   </Text>
-                </View>
+                  <Ionicons name="chevron-back" size={18} color={colors.muted} />
+                </Pressable>
               ))}
             </Card>
           </>

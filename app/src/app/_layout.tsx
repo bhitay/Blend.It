@@ -45,6 +45,8 @@ function RootNavigator() {
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="account/new" options={{ title: 'חשבון חדש', presentation: 'modal' }} />
         <Stack.Screen name="account/[id]" options={{ title: '' }} />
+        <Stack.Screen name="account/edit" options={{ title: 'עריכת חשבון', presentation: 'modal' }} />
+        <Stack.Screen name="group/[id]" options={{ title: '' }} />
         <Stack.Screen name="category" options={{ title: 'סיווג', presentation: 'modal' }} />
       </Stack.Protected>
     </Stack>

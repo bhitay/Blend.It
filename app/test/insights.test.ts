@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { buildInsights, previousMonths, summarizeMonth } from '../src/lib/insights';
+import { accountInsights, buildInsights, previousMonths, summarizeMonth } from '../src/lib/insights';
 import type { CategorizedTransaction, MonthlyCategoryTotal } from '../src/lib/imports';
 
 const row = (month: string, category: string, net: number, is_fixed = false, transactions = 1): MonthlyCategoryTotal => ({
@@ -72,4 +72,22 @@ test('insights: good savings month, no spike without history', () => {
   assert.equal(ins.length, 1);
   assert.equal(ins[0].level, 'good');
   assert.match(ins[0].title, /80%/);
+});
+
+test('account page: fee verdicts, negative return, missing report', () => {
+  const t = (a: Parameters<typeof accountInsights>[0]) => accountInsights(a, '2026-11-16').map((i) => `${i.level}:${i.title}`);
+  assert.deepEqual(t({ name: 'השתלמות הראל', kind: 'study_fund', details: { fee_balance_pct: 0.55, return_12m_pct: 9.1 } }), ['good:דמי ניהול סבירים']);
+  assert.match(t({ name: 'השתלמות הראל', kind: 'study_fund', details: { fee_balance_pct: 0.8 } })[0], /^warn:דמי ניהול גבוהים/);
+  assert.match(t({ name: 'פנסיה', kind: 'pension', details: { fee_balance_pct: 0.1, fee_deposit_pct: 2 } })[0], /^warn/);
+  assert.ok(t({ name: 'גמל', kind: 'provident', details: { fee_balance_pct: 0.4, return_12m_pct: -3 } }).some((x) => x.startsWith('info:תשואה שלילית')));
+  assert.deepEqual(t({ name: 'פנסיה', kind: 'pension', details: null }), ['info:אין עדיין נתונים מדוח']);
+  assert.deepEqual(t({ name: 'עו"ש', kind: 'bank', details: null }), []);
+});
+
+test('insights page does not list savings accounts that have no report yet', () => {
+  const ins = buildInsights({
+    month: '2026-11-01', today: '2026-11-16', transactions: [], totals: [],
+    accounts: [{ name: 'פנסיה', kind: 'pension', details: null }],
+  });
+  assert.equal(ins.length, 0);
 });

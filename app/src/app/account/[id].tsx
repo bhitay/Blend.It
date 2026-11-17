@@ -1,6 +1,7 @@
-import { router, Stack, useLocalSearchParams } from 'expo-router';
-import { useCallback, useEffect, useState } from 'react';
+import { router, Stack, useFocusEffect, useLocalSearchParams } from 'expo-router';
+import { useCallback, useState } from 'react';
 import { Alert, Platform, Pressable, View } from 'react-native';
+import { InsightCard, ReportFigures } from '@/components/ReportFigures';
 import { Button, Card, colors, ErrorText, Field, Loading, Screen, SectionTitle, Text, styles } from '@/components/ui';
 import {
   deleteAccount,
@@ -14,7 +15,9 @@ import {
   type Transaction,
 } from '@/lib/api';
 import { institutionLabel, KINDS } from '@/lib/accountKinds';
-import { formatDate, formatMoney, parseAmount } from '@/lib/format';
+import { formatDate, formatMoney, parseAmount, todayISO } from '@/lib/format';
+import { accountInsights } from '@/lib/insights';
+import { useOwnerLabel } from '@/lib/session';
 
 export default function AccountDetails() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -24,6 +27,7 @@ export default function AccountDetails() {
   const [input, setInput] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const ownerLabel = useOwnerLabel();
 
   const load = useCallback(async () => {
     try {
@@ -36,14 +40,27 @@ export default function AccountDetails() {
     }
   }, [id]);
 
-  useEffect(() => {
-    load();
-  }, [load]);
+  // Reload when coming back from the edit screen or a category change.
+  useFocusEffect(
+    useCallback(() => {
+      load();
+    }, [load]),
+  );
 
   if (!account) return error ? <ErrorText>{error}</ErrorText> : <Loading />;
 
   const imported = account.source === 'import';
   const sign = account.is_liability ? -1 : 1;
+  const insights = accountInsights({ name: account.name, kind: account.kind, details: account.details }, todayISO());
+  const editButton = (
+    <Pressable
+      accessibilityRole="button"
+      onPress={() => router.push({ pathname: '/account/edit', params: { id: account.id } })}
+      hitSlop={10}
+    >
+      <Text style={{ color: colors.primary, fontWeight: '600' }}>עריכה</Text>
+    </Pressable>
+  );
 
   async function saveBalance() {
     const amount = parseAmount(input);
@@ -79,10 +96,12 @@ export default function AccountDetails() {
 
   return (
     <Screen>
-      <Stack.Screen options={{ title: account.name }} />
+      <Stack.Screen options={{ title: account.name, headerRight: () => editButton }} />
       <Card>
         <Text style={styles.muted}>
-          {[KINDS[account.kind].label, institutionLabel(account.institution)].filter(Boolean).join(' · ')}
+          {[KINDS[account.kind].label, institutionLabel(account.institution), ownerLabel(account.owner_user_id)]
+            .filter(Boolean)
+            .join(' · ')}
         </Text>
         <Text style={{ fontSize: 32, fontWeight: '800', color: account.signed_balance < 0 ? colors.negative : colors.text }}>
           {account.balance == null ? '—' : formatMoney(account.signed_balance, account.currency)}
@@ -95,6 +114,22 @@ export default function AccountDetails() {
           <Text style={styles.muted}>הסכום הוא החיובים שעוד לא ירדו מהבנק.</Text>
         ) : null}
       </Card>
+
+      {account.details ? (
+        <>
+          <SectionTitle>נתונים מהדוח האחרון</SectionTitle>
+          <ReportFigures account={account} />
+        </>
+      ) : null}
+
+      {insights.length > 0 ? (
+        <>
+          <SectionTitle>המלצות</SectionTitle>
+          {insights.map((i) => (
+            <InsightCard key={i.title} insight={i} />
+          ))}
+        </>
+      ) : null}
 
       {account.kind !== 'credit_card' ? (
         <Card>
@@ -174,6 +209,7 @@ export default function AccountDetails() {
         </>
       ) : null}
 
+      <Button title="עריכת פרטי החשבון" variant="secondary" onPress={() => router.push({ pathname: '/account/edit', params: { id: account.id } })} />
       <Button
         title="העברה לארכיון"
         variant="secondary"

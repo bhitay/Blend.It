@@ -71,3 +71,13 @@ export function useHousehold() {
   if (!household || !session) throw new Error('useHousehold requires a signed-in member');
   return { household, userId: session.user.id, members, refreshHousehold };
 }
+
+/** "שלי" / the member's name / "משותף" for an account's owner. */
+export function useOwnerLabel() {
+  const { members, userId } = useHousehold();
+  return (ownerUserId: string | null) => {
+    if (!ownerUserId) return 'משותף';
+    if (ownerUserId === userId) return 'שלי';
+    return members.find((m) => m.user_id === ownerUserId)?.display_name ?? 'לא ידוע';
+  };
+}
