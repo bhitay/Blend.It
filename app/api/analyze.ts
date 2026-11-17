@@ -12,128 +12,10 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { betaJSONSchemaOutputFormat } from '@anthropic-ai/sdk/helpers/beta/json-schema';
 import { createClient } from '@supabase/supabase-js';
-import { ALL_CATEGORIES } from '../src/lib/categories';
+import { categorizeSchema, documentSchema, emptyStringsToNull, tableSchema } from './_schemas';
 
 const MODEL = 'claude-opus-5-5';
 const anthropic = new Anthropic(); // reads ANTHROPIC_API_KEY
-
-const nullableInt = { type: ['integer', 'null'] } as const;
-const nullableNum = { type: ['number', 'null'] } as const;
-const nullableStr = { type: ['string', 'null'] } as const;
-
-// --- schemas -----------------------------------------------------------------
-
-const tableSchema = {
-  type: 'object',
-  properties: {
-    source_type: { type: 'string', enum: ['bank', 'credit_card', 'investments', 'insurance_list', 'unknown'] },
-    institution: { ...nullableStr, description: 'mizrahi | discount | otsarHahayal | max | isracard | visaCal | amex | leumi | hapoalim, or the name as written' },
-    account_hint: { ...nullableStr, description: 'last 4 digits of the account or card number, if shown' },
-    owner_name: nullableStr,
-    header_row: { type: 'integer', description: '0-based index of the column-header row in the given rows' },
-    date_col: { type: 'integer' },
-    description_col: { type: 'integer' },
-    processed_date_col: nullableInt,
-    amount_col: { ...nullableInt, description: 'single signed/unsigned amount column (in ILS, the charged amount)' },
-    debit_col: { ...nullableInt, description: 'separate "חובה" column, if amounts are split' },
-    credit_col: { ...nullableInt, description: 'separate "זכות" column, if amounts are split' },
-    balance_col: { ...nullableInt, description: 'running balance column (bank)' },
-    original_amount_col: nullableInt,
-    original_currency_col: nullableInt,
-    installments_col: { ...nullableInt, description: 'column with text like "תשלום 2 מתוך 12"' },
-    memo_col: nullableInt,
-    date_format: { type: 'string', enum: ['DMY', 'MDY', 'YMD'] },
-    expenses_are_negative: {
-      type: 'boolean',
-      description: 'with a single amount column: true if money going out is shown as negative numbers',
-    },
-    closing_balance: { ...nullableNum, description: 'bank: current balance stated in the file; card: total of the coming charge' },
-    notes: { type: 'string', description: 'short Hebrew note for the user if something is unusual, else empty' },
-  },
-  required: [
-    'source_type', 'institution', 'account_hint', 'owner_name', 'header_row', 'date_col', 'description_col',
-    'processed_date_col', 'amount_col', 'debit_col', 'credit_col', 'balance_col', 'original_amount_col',
-    'original_currency_col', 'installments_col', 'memo_col', 'date_format', 'expenses_are_negative',
-    'closing_balance', 'notes',
-  ],
-  additionalProperties: false,
-} as const;
-
-const documentSchema = {
-  type: 'object',
-  properties: {
-    report_type: {
-      type: 'string',
-      enum: [
-        'pension', 'study_fund', 'provident', 'managers_insurance', 'mortgage', 'loan',
-        'investments', 'insurance', 'payslip', 'bank_statement', 'other',
-      ],
-    },
-    institution: nullableStr,
-    product_name: { ...nullableStr, description: 'e.g. "קרן השתלמות מסלול כללי"' },
-    owner_name: nullableStr,
-    account_hint: { ...nullableStr, description: 'last 4 digits of the policy / account number' },
-    as_of: { ...nullableStr, description: 'YYYY-MM-DD the figures refer to' },
-    balance: { ...nullableNum, description: 'total accumulated savings, or outstanding debt for mortgage/loan, in ILS' },
-    monthly_deposit: { ...nullableNum, description: 'savings: total monthly deposit (employee+employer)' },
-    return_ytd_pct: nullableNum,
-    return_12m_pct: nullableNum,
-    fee_balance_pct: { ...nullableNum, description: 'management fee from balance (דמי ניהול מצבירה), % per year' },
-    fee_deposit_pct: { ...nullableNum, description: 'management fee from deposits (דמי ניהול מהפקדה), %' },
-    liquidity_date: { ...nullableStr, description: 'study fund: YYYY-MM-DD when it becomes withdrawable tax-free' },
-    monthly_payment: { ...nullableNum, description: 'mortgage/loan monthly payment' },
-    end_date: nullableStr,
-    tracks: {
-      type: 'array',
-      description: 'mortgage/loan tracks (מסלולים); empty for other reports',
-      items: {
-        type: 'object',
-        properties: {
-          name: { type: 'string' },
-          balance: nullableNum,
-          interest_rate_pct: nullableNum,
-          indexation: { ...nullableStr, description: 'e.g. צמוד מדד, פריים, קבועה לא צמודה' },
-          end_date: nullableStr,
-        },
-        required: ['name', 'balance', 'interest_rate_pct', 'indexation', 'end_date'],
-        additionalProperties: false,
-      },
-    },
-    highlights: {
-      type: 'array',
-      items: { type: 'string' },
-      description: 'up to 5 short Hebrew facts worth knowing (coverage, insurance costs inside the fund, anomalies)',
-    },
-  },
-  required: [
-    'report_type', 'institution', 'product_name', 'owner_name', 'account_hint', 'as_of', 'balance', 'monthly_deposit',
-    'return_ytd_pct', 'return_12m_pct', 'fee_balance_pct', 'fee_deposit_pct', 'liquidity_date', 'monthly_payment',
-    'end_date', 'tracks', 'highlights',
-  ],
-  additionalProperties: false,
-} as const;
-
-const categorizeSchema = {
-  type: 'object',
-  properties: {
-    items: {
-      type: 'array',
-      items: {
-        type: 'object',
-        properties: {
-          merchant: { type: 'string' },
-          category: { type: 'string', enum: ALL_CATEGORIES as unknown as string[] },
-          is_fixed: { type: 'boolean' },
-          is_transfer: { type: 'boolean' },
-        },
-        required: ['merchant', 'category', 'is_fixed', 'is_transfer'],
-        additionalProperties: false,
-      },
-    },
-  },
-  required: ['items'],
-  additionalProperties: false,
-} as const;
 
 // --- prompts -------------------------------------------------------------------
 
@@ -194,7 +76,7 @@ async function ask<T>(
   if (response.stop_reason === 'refusal') throw new HttpError(422, 'Claude declined to process this file.');
   if (response.stop_reason === 'max_tokens') throw new HttpError(422, 'The file is too large to analyze in one go.');
   if (!response.parsed_output) throw new HttpError(502, 'Could not parse the model response.');
-  return response.parsed_output as T;
+  return emptyStringsToNull(response.parsed_output) as T;
 }
 
 class HttpError extends Error {
