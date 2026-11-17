@@ -21,6 +21,8 @@ export type AccountForInsights = {
   name: string;
   kind: string;
   details: {
+    monthly_deposit?: number | null;
+    return_ytd_pct?: number | null;
     fee_balance_pct?: number | null;
     fee_deposit_pct?: number | null;
     liquidity_date?: string | null;
@@ -162,34 +164,8 @@ export function buildInsights(input: {
     });
   }
 
-  // 5. Management fees and study-fund liquidity
-  for (const a of accounts) {
-    const d = a.details;
-    if (!d) continue;
-    const fb = d.fee_balance_pct ?? null;
-    const fd = d.fee_deposit_pct ?? null;
-    if (a.kind === 'pension' && ((fb != null && fb > 0.22) || (fd != null && fd > 1.5))) {
-      out.push({
-        level: 'warn',
-        title: `דמי ניהול גבוהים: ${a.name}`,
-        body: `${fb ?? '—'}% מהצבירה ו-${fd ?? '—'}% מההפקדה. בקרנות פנסיה אפשר בדרך כלל להגיע לכ-0.1%–0.22% מהצבירה ועד 1%–1.5% מההפקדה. כדאי לבקש הורדה או להשוות.`,
-      });
-    }
-    if ((a.kind === 'study_fund' || a.kind === 'provident') && fb != null && fb > 0.6) {
-      out.push({
-        level: 'warn',
-        title: `דמי ניהול גבוהים: ${a.name}`,
-        body: `${fb}% מהצבירה בשנה. בקרנות השתלמות וגמל אפשר לרוב להשיג פחות מ-0.6%.`,
-      });
-    }
-    if (a.kind === 'study_fund' && d.liquidity_date) {
-      const months = monthsBetween(today, d.liquidity_date);
-      if (months <= 0)
-        out.push({ level: 'info', title: `${a.name} נזילה`, body: 'אפשר למשוך את הכסף בפטור ממס, או להמשיך לחסוך בה. היא נשארת פטורה ממס על הרווחים כל עוד לא מושכים.' });
-      else if (months <= 6)
-        out.push({ level: 'info', title: `${a.name} תהיה נזילה בעוד ${months} חודשים`, body: `מועד הנזילות: ${d.liquidity_date.split('-').reverse().join('/')}.` });
-    }
-  }
+  // 5. Management fees and study-fund liquidity (positive notes only on the account page)
+  for (const a of accounts) out.push(...accountInsights(a, today).filter((i) => i.level !== 'good' && a.details));
 
   // 6. Uncategorized
   if (cur.uncategorized > 0) {
@@ -198,6 +174,61 @@ export function buildInsights(input: {
       title: `${cur.uncategorized} תנועות לא מסווגות`,
       body: 'הסיווג רץ אוטומטית אחרי כל ייבוא. אפשר גם לסווג ידנית מדף החשבון, והאפליקציה תזכור.',
     });
+  }
+  return out;
+}
+
+/** Typical ranges in Israel (2025–2026) that are reachable when negotiating with the fund. */
+const FEE_TARGETS: Record<string, { balance: number; deposit: number | null; label: string }> = {
+  pension: { balance: 0.22, deposit: 1.5, label: 'בקרנות פנסיה אפשר בדרך כלל להגיע לכ-0.1%–0.22% מהצבירה ועד 1%–1.5% מההפקדה' },
+  study_fund: { balance: 0.6, deposit: null, label: 'בקרנות השתלמות אפשר לרוב להשיג פחות מ-0.6% מהצבירה, בלי דמי ניהול מהפקדה' },
+  provident: { balance: 0.6, deposit: null, label: 'בקופות גמל אפשר לרוב להשיג פחות מ-0.6% מהצבירה' },
+  insurance: { balance: 1.05, deposit: 4, label: 'בביטוחי מנהלים ישנים דמי הניהול גבוהים לרוב; כדאי לבדוק מול פוליסה או קרן חדשה' },
+};
+
+/** Recommendations for a single savings account, from the figures of its latest report. */
+export function accountInsights(a: AccountForInsights, today: string): Insight[] {
+  const out: Insight[] = [];
+  const d = a.details;
+  const target = FEE_TARGETS[a.kind];
+  if (!target) return out;
+  if (!d) {
+    out.push({
+      level: 'info',
+      title: 'אין עדיין נתונים מדוח',
+      body: 'העלו את הדוח הרבעוני או השנתי (PDF) של החשבון הזה, ונציג תשואה, דמי ניהול והמלצות.',
+    });
+    return out;
+  }
+  const fb = d.fee_balance_pct ?? null;
+  const fd = d.fee_deposit_pct ?? null;
+  const highBalance = fb != null && fb > target.balance;
+  const highDeposit = fd != null && target.deposit != null && fd > target.deposit;
+  if (highBalance || highDeposit) {
+    out.push({
+      level: 'warn',
+      title: `דמי ניהול גבוהים: ${a.name}`,
+      body:
+        `${fb ?? '—'}% מהצבירה` +
+        (target.deposit != null ? ` ו-${fd ?? '—'}% מההפקדה` : '') +
+        `. ${target.label}. כדאי להתקשר לחברה ולבקש הורדה, או להשוות מול חברות אחרות.`,
+    });
+  } else if (fb != null) {
+    out.push({ level: 'good', title: 'דמי ניהול סבירים', body: `${fb}% מהצבירה${fd != null && target.deposit != null ? ` ו-${fd}% מההפקדה` : ''}. ${target.label}.` });
+  }
+  if (d.return_12m_pct != null && d.return_12m_pct < 0) {
+    out.push({
+      level: 'info',
+      title: `תשואה שלילית ב-12 החודשים האחרונים (${d.return_12m_pct}%)`,
+      body: 'בחיסכון לטווח ארוך זה קורה בתקופות ירידה בשווקים. כדאי לבדוק שמסלול ההשקעה מתאים לגיל ולטווח, ולא לעבור מסלול רק בגלל תקופה אחת.',
+    });
+  }
+  if (a.kind === 'study_fund' && d.liquidity_date) {
+    const months = monthsBetween(today, d.liquidity_date);
+    if (months <= 0)
+      out.push({ level: 'info', title: `${a.name} נזילה`, body: 'אפשר למשוך את הכסף בפטור ממס, או להמשיך לחסוך בה. היא נשארת פטורה ממס על הרווחים כל עוד לא מושכים.' });
+    else if (months <= 6)
+      out.push({ level: 'info', title: `${a.name} תהיה נזילה בעוד ${months} חודשים`, body: `מועד הנזילות: ${d.liquidity_date.split('-').reverse().join('/')}.` });
   }
   return out;
 }
