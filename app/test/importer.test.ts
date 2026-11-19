@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import * as XLSX from 'xlsx';
 import {
-  applyMapping, hash, parseDate, parseNumber, readSpreadsheet, toBase64, upcomingCardCharges, validateMapping,
+  applyMapping, hash, maskIdentifiers, maskRows, parseDate, parseNumber, readSpreadsheet, toBase64, upcomingCardCharges, validateMapping,
   type TableMapping,
 } from '../src/lib/importer';
 
@@ -111,3 +111,22 @@ test('base64 of binary data', () => {
   const bytes = new Uint8Array([37, 80, 68, 70, 255, 0]);
   assert.equal(toBase64(bytes.buffer), Buffer.from(bytes).toString('base64'));
 });
+
+test('identifiers are masked before leaving the device; amounts and dates are not', () => {
+  assert.equal(maskIdentifiers('ת.ז. 034567891'), 'ת.ז. •••7891');
+  assert.equal(maskIdentifiers('חשבון 123-456789'), 'חשבון •••6789');
+  assert.equal(maskIdentifiers('כרטיס 4580 1234 5678 9012'), 'כרטיס •••9012');
+  assert.equal(maskIdentifiers('טלפון 050-1234567'), 'טלפון •••4567');
+  assert.equal(maskIdentifiers('1,234,567.89'), '1,234,567.89');
+  assert.equal(maskIdentifiers('2350000.00'), '2350000.00');
+  assert.equal(maskIdentifiers('13,347.70'), '13,347.70');
+  assert.equal(maskIdentifiers('05/11/2026'), '05/11/2026');
+  assert.equal(maskIdentifiers('2026-11-05'), '2026-11-05');
+  assert.equal(maskIdentifiers('05-11-2026'), '05-11-2026');
+  assert.equal(maskIdentifiers('4321'), '4321');
+  assert.equal(maskIdentifiers('שופרסל דיל'), 'שופרסל דיל');
+  const rows = [['חשבון 123-456789'], ['01/11/2026', 'משכורת', '18,500.00']];
+  assert.deepEqual(maskRows(rows), [['חשבון •••6789'], ['01/11/2026', 'משכורת', '18,500.00']]);
+  assert.equal(rows[0][0], 'חשבון 123-456789', 'originals untouched');
+});
+

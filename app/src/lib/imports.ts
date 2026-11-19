@@ -1,6 +1,6 @@
 import type { AccountKind } from './accountKinds';
 import { supabase } from './supabase';
-import type { ParsedTransaction, TableMapping } from './importer';
+import { maskRows, type ParsedTransaction, type TableMapping } from './importer';
 
 // Same origin on web (Vercel serves the app and /api). A native build sets EXPO_PUBLIC_API_URL.
 const API_BASE = process.env.EXPO_PUBLIC_API_URL?.replace(/\/$/, '') ?? '';
@@ -66,8 +66,9 @@ async function analyze<T>(body: Record<string, unknown>): Promise<T> {
   return payload as T;
 }
 
+/** Sends only the first 40 rows, with ID / account numbers masked, to learn the column layout. */
 export const analyzeTable = (fileName: string, rows: string[][]) =>
-  analyze<TableMapping>({ task: 'table', fileName, rows: rows.slice(0, 40) });
+  analyze<TableMapping>({ task: 'table', fileName, rows: maskRows(rows.slice(0, 40)) });
 
 export const analyzeDocument = (fileName: string, pdfBase64: string) =>
   analyze<DocumentReport>({ task: 'document', fileName, pdfBase64 });
@@ -142,7 +143,8 @@ export async function saveReport(input: {
       file_name: input.fileName,
       report_type: report.report_type,
       period_end: asOf,
-      summary: report,
+      // The figures are kept; the person's name is not (the account already says whose it is).
+      summary: { ...report, owner_name: null },
     }),
   );
 }

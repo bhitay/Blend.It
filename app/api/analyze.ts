@@ -49,14 +49,30 @@ function json(status: number, body: unknown): Response {
   return new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } });
 }
 
-async function authorized(request: Request): Promise<boolean> {
+/** Calls per user per day. A month's uploads take a few dozen at most. */
+const DAILY_LIMIT = 100;
+
+/**
+ * Only members of a household may use the AI, and only up to DAILY_LIMIT calls a day.
+ * The check runs in the database with the caller's own token (use_api_quota, migration 0003),
+ * so an invalid or expired token, a user without a household, or a session that still owes
+ * the two-step code is refused.
+ */
+async function checkAccess(request: Request): Promise<Response | null> {
   const token = request.headers.get('authorization')?.replace(/^Bearer\s+/i, '');
   const url = process.env.EXPO_PUBLIC_SUPABASE_URL?.trim();
   const key = process.env.EXPO_PUBLIC_SUPABASE_KEY?.trim();
-  if (!token || !url || !key) return false;
-  const supabase = createClient(new URL(url).origin, key, { auth: { persistSession: false } });
-  const { data, error } = await supabase.auth.getUser(token);
-  return !error && Boolean(data.user);
+  if (!url || !key) return json(500, { error: 'Supabase is not configured on the server.' });
+  if (!token) return json(401, { error: 'Not signed in.' });
+  const supabase = createClient(new URL(url).origin, key, {
+    auth: { persistSession: false, autoRefreshToken: false },
+    global: { headers: { Authorization: `Bearer ${token}` } },
+  });
+  const { data, error } = await supabase.rpc('use_api_quota', { daily_limit: DAILY_LIMIT });
+  if (error) return json(401, { error: 'Not signed in.' });
+  if (data === 'not_member') return json(403, { error: 'Only household members can use this.' });
+  if (data === 'limit') return json(429, { error: 'הגעתם למכסת הניתוחים היומית. נסו שוב מחר.' });
+  return null;
 }
 
 async function ask<T>(
@@ -90,7 +106,8 @@ class HttpError extends Error {
 
 export async function POST(request: Request): Promise<Response> {
   if (!process.env.ANTHROPIC_API_KEY) return json(500, { error: 'ANTHROPIC_API_KEY is not set on the server.' });
-  if (!(await authorized(request))) return json(401, { error: 'Not signed in.' });
+  const denied = await checkAccess(request);
+  if (denied) return denied;
 
   let body: Body;
   try {

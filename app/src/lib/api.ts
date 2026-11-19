@@ -2,7 +2,7 @@ import { supabase } from './supabase';
 import { KINDS, type AccountKind } from './accountKinds';
 import { todayISO } from './format';
 
-export type Household = { id: string; name: string; invite_code: string };
+export type Household = { id: string; name: string; invite_code: string; invite_open: boolean; max_members: number };
 export type Member = { user_id: string; display_name: string; role: 'owner' | 'member' };
 
 export type Account = {
@@ -54,7 +54,7 @@ export async function fetchHousehold(userId: string): Promise<Household | null> 
   const rows = check(
     await supabase
       .from('household_members')
-      .select('households(id, name, invite_code)')
+      .select('households(id, name, invite_code, invite_open, max_members)')
       .eq('user_id', userId)
       .order('joined_at')
       .limit(1),
@@ -74,6 +74,11 @@ export async function fetchMembers(householdId: string): Promise<Member[]> {
 
 export async function createHousehold(name: string, memberName: string): Promise<void> {
   check(await supabase.rpc('create_household', { household_name: name, member_name: memberName }));
+}
+
+/** Owner only: issues a new invite code (the old one stops working). */
+export async function regenerateInvite(householdId: string): Promise<void> {
+  check(await supabase.rpc('regenerate_invite', { hid: householdId }));
 }
 
 export async function joinHousehold(code: string, memberName: string): Promise<void> {

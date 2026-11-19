@@ -18,12 +18,13 @@ if (Platform.OS === 'web') {
 }
 
 function RootNavigator() {
-  const { loading, session, household } = useSession();
+  const { loading, session, household, mfaRequired } = useSession();
   if (!isConfigured) return <NotConfigured />;
   if (loading) return <Loading />;
 
   const signedIn = Boolean(session);
-  const ready = signedIn && Boolean(household);
+  const verified = signedIn && !mfaRequired;
+  const ready = verified && Boolean(household);
 
   return (
     <Stack
@@ -38,7 +39,10 @@ function RootNavigator() {
       <Stack.Protected guard={!signedIn}>
         <Stack.Screen name="sign-in" options={{ headerShown: false }} />
       </Stack.Protected>
-      <Stack.Protected guard={signedIn && !household}>
+      <Stack.Protected guard={signedIn && mfaRequired}>
+        <Stack.Screen name="mfa-verify" options={{ headerShown: false }} />
+      </Stack.Protected>
+      <Stack.Protected guard={verified && !household}>
         <Stack.Screen name="onboarding" options={{ title: 'משק הבית שלכם' }} />
       </Stack.Protected>
       <Stack.Protected guard={ready}>
@@ -47,6 +51,7 @@ function RootNavigator() {
         <Stack.Screen name="account/[id]" options={{ title: '' }} />
         <Stack.Screen name="account/edit" options={{ title: 'עריכת חשבון', presentation: 'modal' }} />
         <Stack.Screen name="group/[id]" options={{ title: '' }} />
+        <Stack.Screen name="mfa-setup" options={{ title: 'אימות דו-שלבי', presentation: 'modal' }} />
         <Stack.Screen name="category" options={{ title: 'סיווג', presentation: 'modal' }} />
       </Stack.Protected>
     </Stack>
