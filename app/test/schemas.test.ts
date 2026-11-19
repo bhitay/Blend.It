@@ -23,3 +23,27 @@ test('empty strings become null, notes and numbers are untouched', () => {
     { institution: null, as_of: '2026-09-30', balance: 0, notes: '', tracks: [{ name: 'פריים', end_date: null }], highlights: ['x'] },
   );
 });
+
+import { scrubReport } from '../api/_schemas';
+
+test('report safety net: personal sentences dropped, long numbers masked, product facts kept', () => {
+  const out = scrubReport({
+    product_name: 'הראל קרן השתלמות – מסלול מניות',
+    fee_balance_pct: 0.6,
+    highlights: [
+      'לא נקבעו מוטבים בחשבון – מומלץ לעדכן',
+      'דמי הניהול שלך (0.60%) גבוהים מהממוצע בקופה (0.55%)',
+      'עלות שנתית צפויה במסלול מניות: 1.01%',
+      'ההפקדה עלתה באוגוסט 2026 – שכר 12,192 ₪ אצל אינפיניטי לאבס',
+      'הסוכן: אמנון גור סוכנות לבט, 03-6142121',
+      'מספר חשבון 172667757',
+    ],
+  });
+  assert.deepEqual(out.highlights, [
+    'לא נקבעו מוטבים בחשבון – מומלץ לעדכן',
+    'דמי הניהול שלך (0.60%) גבוהים מהממוצע בקופה (0.55%)',
+    'עלות שנתית צפויה במסלול מניות: 1.01%',
+    'מספר חשבון •••7757',
+  ]);
+  assert.equal(out.fee_balance_pct, 0.6);
+});

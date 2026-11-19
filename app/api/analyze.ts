@@ -12,7 +12,7 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { betaJSONSchemaOutputFormat } from '@anthropic-ai/sdk/helpers/beta/json-schema';
 import { createClient } from '@supabase/supabase-js';
-import { categorizeSchema, documentSchema, emptyStringsToNull, tableSchema } from './_schemas';
+import { categorizeSchema, documentSchema, emptyStringsToNull, scrubReport, tableSchema } from './_schemas';
 
 const MODEL = 'claude-opus-5-5';
 const anthropic = new Anthropic(); // reads ANTHROPIC_API_KEY
@@ -29,7 +29,10 @@ the date format, and the sign convention for amounts. For credit cards, use the 
 and the original amount/currency columns for foreign transactions.`;
 
 const DOCUMENT_PROMPT = `This is a financial report the user downloaded (e.g. a quarterly pension / study-fund report, a mortgage balance statement,
-a loan statement or a payslip). Extract the figures. Percentages as numbers (0.22 means 0.22%). Amounts in ILS.`;
+a loan statement or a payslip). Extract the figures. Percentages as numbers (0.22 means 0.22%). Amounts in ILS.
+Privacy: the app stores what you return. Do not copy personal details into any text field — no names of people, employers or
+agents, no ID / account / policy / phone numbers, no addresses, no salary amounts. Only owner_name and account_hint may hold the
+holder's name and the last 4 digits of the account.`;
 
 const CATEGORIZE_PROMPT = `Categorize each merchant / transaction description from Israeli bank and credit-card statements.
 - category: the best fit from the allowed list.
@@ -137,7 +140,7 @@ export async function POST(request: Request): Promise<Response> {
           documentSchema,
           'high',
         );
-        return json(200, result);
+        return json(200, scrubReport(result as Record<string, unknown>));
       }
       case 'categorize': {
         const merchants = (body.merchants ?? []).slice(0, 300);

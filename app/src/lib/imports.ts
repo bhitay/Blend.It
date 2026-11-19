@@ -20,6 +20,7 @@ export type DocumentReport = {
   return_12m_pct: number | null;
   fee_balance_pct: number | null;
   fee_deposit_pct: number | null;
+  fund_avg_fee_balance_pct: number | null;
   liquidity_date: string | null;
   monthly_payment: number | null;
   end_date: string | null;
@@ -130,6 +131,7 @@ export async function saveReport(input: {
       return_12m_pct: report.return_12m_pct,
       fee_balance_pct: report.fee_balance_pct,
       fee_deposit_pct: report.fee_deposit_pct,
+      fund_avg_fee_balance_pct: report.fund_avg_fee_balance_pct,
       liquidity_date: report.liquidity_date,
       monthly_payment: report.monthly_payment,
       end_date: report.end_date,
