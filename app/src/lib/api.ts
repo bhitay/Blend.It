@@ -32,6 +32,7 @@ export type AccountDetails = {
   return_12m_pct?: number | null;
   fee_balance_pct?: number | null;
   fee_deposit_pct?: number | null;
+  fund_avg_fee_balance_pct?: number | null;
   liquidity_date?: string | null;
   monthly_payment?: number | null;
   end_date?: string | null;

@@ -7,6 +7,7 @@
 // test/schemas.test.ts enforces the limit.
 
 import { ALL_CATEGORIES } from '../src/lib/categories';
+import { maskIdentifiers } from '../src/lib/mask';
 
 export const MAX_UNION_PARAMS = 16;
 
@@ -61,7 +62,7 @@ export const documentSchema = {
       ],
     },
     institution: optStr('the managing company, e.g. הראל, מגדל, מזרחי טפחות'),
-    product_name: optStr('e.g. "קרן השתלמות מסלול כללי"'),
+    product_name: optStr('product and investment track only, e.g. "קרן השתלמות מסלול כללי" — no personal names'),
     owner_name: optStr('the member / borrower name'),
     account_hint: optStr('last 4 digits of the policy / account number'),
     as_of: optStr('YYYY-MM-DD the figures refer to (end of the report period)'),
@@ -71,6 +72,10 @@ export const documentSchema = {
     return_12m_pct: nullableNum,
     fee_balance_pct: { ...nullableNum, description: 'management fee from balance (דמי ניהול מצבירה), % per year' },
     fee_deposit_pct: { ...nullableNum, description: 'management fee from deposits (דמי ניהול מהפקדה), %' },
+    fund_avg_fee_balance_pct: {
+      ...nullableNum,
+      description: 'the fund\'s average management fee from balance, if the report states it (e.g. "ממוצע דמי ניהול בקופה"), %',
+    },
     liquidity_date: optStr('study fund: YYYY-MM-DD when it becomes withdrawable tax-free'),
     monthly_payment: { ...nullableNum, description: 'mortgage/loan monthly payment' },
     end_date: optStr('mortgage/loan: YYYY-MM-DD of the last payment'),
@@ -93,12 +98,15 @@ export const documentSchema = {
     highlights: {
       type: 'array',
       items: { type: 'string' },
-      description: 'up to 5 short Hebrew facts worth knowing (coverage, insurance costs inside the fund, anomalies)',
+      description:
+        'up to 5 short Hebrew facts about the product worth knowing (e.g. beneficiaries not set, fees vs. the fund average, ' +
+        'insurance costs inside the fund). NEVER include personal details: names of people, employers or agents, ID / account / ' +
+        'policy / phone numbers, addresses, or salary amounts.',
     },
   },
   required: [
     'report_type', 'institution', 'product_name', 'owner_name', 'account_hint', 'as_of', 'balance', 'monthly_deposit',
-    'return_ytd_pct', 'return_12m_pct', 'fee_balance_pct', 'fee_deposit_pct', 'liquidity_date', 'monthly_payment',
+    'return_ytd_pct', 'return_12m_pct', 'fee_balance_pct', 'fee_deposit_pct', 'fund_avg_fee_balance_pct', 'liquidity_date', 'monthly_payment',
     'end_date', 'tracks', 'highlights',
   ],
   additionalProperties: false,
@@ -146,4 +154,24 @@ export function emptyStringsToNull<T>(value: T): T {
     return Object.fromEntries(Object.entries(value).map(([k, v]) => [k, k === 'notes' ? v : emptyStringsToNull(v)])) as T;
   }
   return value;
+}
+
+/** Words that mark a sentence as being about the person rather than the product. */
+const PERSONAL = /שכר|משכורת|מעסיק|מעביד|סוכן|סוכנות|יועץ|ת\.?ז|תעודת זהות|טלפון|כתובת|מייל|דוא"ל|@/;
+
+/**
+ * Safety net after the model: masks long numbers in every text field and drops
+ * highlight sentences about the person (salary, employer, agent, ID …), so they are
+ * never shown or stored even if the model ignored the instruction.
+ */
+export function scrubReport<T extends Record<string, unknown>>(report: T): T {
+  const scrub = (v: unknown): unknown => {
+    if (typeof v === 'string') return maskIdentifiers(v);
+    if (Array.isArray(v)) return v.map(scrub);
+    if (v && typeof v === 'object') return Object.fromEntries(Object.entries(v).map(([k, x]) => [k, scrub(x)]));
+    return v;
+  };
+  const out = scrub(report) as T & { highlights?: string[] };
+  if (Array.isArray(out.highlights)) out.highlights = out.highlights.filter((h) => !PERSONAL.test(h));
+  return out;
 }

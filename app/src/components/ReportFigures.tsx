@@ -29,6 +29,7 @@ export function ReportFigures({ account }: { account: Account }) {
     ['תשואה 12 חודשים', pct(d.return_12m_pct)],
     ['דמי ניהול מצבירה', pct(d.fee_balance_pct)],
     ['דמי ניהול מהפקדה', pct(d.fee_deposit_pct)],
+    ['ממוצע דמי ניהול בקופה', pct(d.fund_avg_fee_balance_pct)],
     ['מועד נזילות', d.liquidity_date ? formatDate(d.liquidity_date) : null],
     ['החזר חודשי', d.monthly_payment != null ? formatMoney(d.monthly_payment) : null],
     ['סיום', d.end_date ? formatDate(d.end_date) : null],

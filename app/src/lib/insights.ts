@@ -25,6 +25,7 @@ export type AccountForInsights = {
     return_ytd_pct?: number | null;
     fee_balance_pct?: number | null;
     fee_deposit_pct?: number | null;
+    fund_avg_fee_balance_pct?: number | null;
     liquidity_date?: string | null;
     return_12m_pct?: number | null;
   } | null;
@@ -212,6 +213,12 @@ export function accountInsights(a: AccountForInsights, today: string): Insight[]
         `${fb ?? '—'}% מהצבירה` +
         (target.deposit != null ? ` ו-${fd ?? '—'}% מההפקדה` : '') +
         `. ${target.label}. כדאי להתקשר לחברה ולבקש הורדה, או להשוות מול חברות אחרות.`,
+    });
+  } else if (fb != null && d.fund_avg_fee_balance_pct != null && fb > d.fund_avg_fee_balance_pct) {
+    out.push({
+      level: 'warn',
+      title: `משלמים יותר מהממוצע בקופה: ${a.name}`,
+      body: `דמי הניהול שלך ${fb}% מהצבירה, והממוצע בקופה הוא ${d.fund_avg_fee_balance_pct}% (לפי הדוח). כדאי לבקש מהחברה הורדה, לפחות לממוצע.`,
     });
   } else if (fb != null) {
     out.push({ level: 'good', title: 'דמי ניהול סבירים', body: `${fb}% מהצבירה${fd != null && target.deposit != null ? ` ו-${fd}% מההפקדה` : ''}. ${target.label}.` });

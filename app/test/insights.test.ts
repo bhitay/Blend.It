@@ -91,3 +91,11 @@ test('insights page does not list savings accounts that have no report yet', () 
   });
   assert.equal(ins.length, 0);
 });
+
+test('account page: paying more than the fund average (as stated in the report) is flagged', () => {
+  const [i] = accountInsights({ name: 'השתלמות הראל', kind: 'study_fund', details: { fee_balance_pct: 0.6, fund_avg_fee_balance_pct: 0.55 } }, '2026-11-16');
+  assert.equal(i.level, 'warn');
+  assert.match(i.title, /יותר מהממוצע בקופה/);
+  const [ok] = accountInsights({ name: 'x', kind: 'study_fund', details: { fee_balance_pct: 0.5, fund_avg_fee_balance_pct: 0.55 } }, '2026-11-16');
+  assert.equal(ok.level, 'good');
+});
