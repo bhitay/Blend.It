@@ -1,6 +1,7 @@
 import type { Session } from '@supabase/supabase-js';
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react';
 import { fetchHousehold, fetchMembers, type Household, type Member } from './api';
+import { getMfaState } from './mfa';
 import { isConfigured, supabase } from './supabase';
 
 type SessionState = {
@@ -8,6 +9,9 @@ type SessionState = {
   session: Session | null;
   household: Household | null;
   members: Member[];
+  /** Signed in, but two-step verification is on and this session hasn't passed it yet. */
+  mfaRequired: boolean;
+  mfaEnabled: boolean;
   refreshHousehold: () => Promise<void>;
 };
 
@@ -18,14 +22,24 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const [household, setHousehold] = useState<Household | null>(null);
   const [members, setMembers] = useState<Member[]>([]);
   const [loading, setLoading] = useState(isConfigured);
+  const [mfa, setMfa] = useState({ enabled: false, required: false });
 
   const loadHousehold = useCallback(async (s: Session | null) => {
     if (!s) {
       setHousehold(null);
       setMembers([]);
+      setMfa({ enabled: false, required: false });
       return;
     }
     try {
+      const state = await getMfaState();
+      setMfa(state);
+      // Before the second step the database returns no household data anyway.
+      if (state.required) {
+        setHousehold(null);
+        setMembers([]);
+        return;
+      }
       const h = await fetchHousehold(s.user.id);
       setHousehold(h);
       setMembers(h ? await fetchMembers(h.id) : []);
@@ -44,7 +58,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     const { data: sub } = supabase.auth.onAuthStateChange((event, s) => {
       setSession(s);
       // Token refreshes don't change membership; skip the extra round-trip.
-      if (event === 'SIGNED_IN' || event === 'SIGNED_OUT' || event === 'USER_UPDATED') {
+      if (event === 'SIGNED_IN' || event === 'SIGNED_OUT' || event === 'USER_UPDATED' || event === 'MFA_CHALLENGE_VERIFIED') {
         // Defer: Supabase recommends not awaiting other calls inside this callback.
         setTimeout(() => loadHousehold(s), 0);
       }
@@ -55,7 +69,11 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const refreshHousehold = useCallback(() => loadHousehold(session), [loadHousehold, session]);
 
   return (
-    <Ctx.Provider value={{ loading, session, household, members, refreshHousehold }}>{children}</Ctx.Provider>
+    <Ctx.Provider
+      value={{ loading, session, household, members, mfaRequired: mfa.required, mfaEnabled: mfa.enabled, refreshHousehold }}
+    >
+      {children}
+    </Ctx.Provider>
   );
 }
 
