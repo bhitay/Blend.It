@@ -1,6 +1,6 @@
 import type { AccountKind } from './accountKinds';
 import { supabase } from './supabase';
-import { maskRows, type ParsedTransaction, type TableMapping } from './importer';
+import { findHeaderRow, localAccountHint, maskIdentifiers, maskRows, type ParsedTransaction, type TableMapping } from './importer';
 
 // Same origin on web (Vercel serves the app and /api). A native build sets EXPO_PUBLIC_API_URL.
 const API_BASE = process.env.EXPO_PUBLIC_API_URL?.replace(/\/$/, '') ?? '';
@@ -66,9 +66,20 @@ async function analyze<T>(body: Record<string, unknown>): Promise<T> {
   return payload as T;
 }
 
-/** Sends only the first 40 rows, with ID / account numbers masked, to learn the column layout. */
-export const analyzeTable = (fileName: string, rows: string[][]) =>
-  analyze<TableMapping>({ task: 'table', fileName, rows: maskRows(rows.slice(0, 40)) });
+/**
+ * Learns the column layout. Sent: up to 40 rows starting at the table's header row
+ * (the title lines above it, with name, ID and address, stay on the device), with
+ * long numbers masked. Row indexes in the answer are shifted back to the full sheet.
+ */
+export async function analyzeTable(fileName: string, rows: string[][]): Promise<TableMapping> {
+  const start = Math.max(0, findHeaderRow(rows));
+  const mapping = await analyze<TableMapping>({ task: 'table', fileName, rows: maskRows(rows.slice(start, start + 40)) });
+  return {
+    ...mapping,
+    header_row: mapping.header_row + start,
+    account_hint: mapping.account_hint ?? localAccountHint(rows, start),
+  };
+}
 
 export const analyzeDocument = (fileName: string, pdfBase64: string) =>
   analyze<DocumentReport>({ task: 'document', fileName, pdfBase64 });
@@ -178,24 +189,32 @@ export async function categorizePending(householdId: string): Promise<number> {
     }
   }
 
-  const merchants = [...pending].map(([name, source]) => ({ name, source }));
+  // Names go out masked (older imports may still hold full numbers in their descriptions);
+  // each answer is mapped back to the exact stored description(s) for the rule.
+  const byMasked = new Map<string, { source: string; originals: string[] }>();
+  for (const [name, source] of pending) {
+    const masked = maskIdentifiers(name);
+    const entry = byMasked.get(masked) ?? { source, originals: [] };
+    entry.originals.push(name);
+    byMasked.set(masked, entry);
+  }
+  const merchants = [...byMasked].map(([name, e]) => ({ name, source: e.source }));
   for (let i = 0; i < merchants.length; i += 150) {
     const chunk = merchants.slice(i, i + 150);
     const { items } = await analyze<{ items: { merchant: string; category: string; is_fixed: boolean; is_transfer: boolean }[] }>({
       task: 'categorize',
       merchants: chunk,
     });
-    const wanted = new Set(chunk.map((m) => m.name));
-    const rules = items
-      .filter((it) => wanted.has(it.merchant))
-      .map((it) => ({
+    const rules = items.flatMap((it) =>
+      (byMasked.get(it.merchant)?.originals ?? []).map((original) => ({
         household_id: householdId,
-        merchant: it.merchant,
+        merchant: original,
         category: it.category,
         is_fixed: it.is_fixed,
         is_transfer: it.is_transfer,
         source: 'ai',
-      }));
+      })),
+    );
     if (rules.length) {
       check(await supabase.from('merchant_categories').upsert(rules, { onConflict: 'household_id,merchant', ignoreDuplicates: true }));
     }
