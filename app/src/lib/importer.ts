@@ -97,6 +97,41 @@ export function maskRows(rows: string[][]): string[][] {
   return rows.map((r) => r.map(maskIdentifiers));
 }
 
+const HEADER_WORDS = /תאריך|date/i;
+
+/**
+ * Index of the table's header row, guessed on the device: the first row with a
+ * "date" heading and at least three filled cells. The lines above it (bank name,
+ * account holder, ID, address) are never sent anywhere. -1 if not found.
+ */
+export function findHeaderRow(rows: string[][]): number {
+  return rows.findIndex((r) => r.filter((c) => c !== '').length >= 3 && r.some((c) => c.length <= 30 && HEADER_WORDS.test(c)));
+}
+
+/**
+ * Last 4 digits of the account / card number in the lines above the table. Prefers a
+ * line that says it is an account or card number, and never uses a line with an ID number.
+ */
+export function localAccountHint(rows: string[][], headerRow: number): string | null {
+  const lines = rows.slice(0, Math.max(0, headerRow)).flatMap((r) => r.filter(Boolean));
+  const longNumber = (text: string) => text.match(/\d(?:[ -]?\d){5,}/)?.[0].replace(/\D/g, '').slice(-4) ?? null;
+  const labelled = /חשבון|ח-ן|ח"ן|כרטיס|account|card/i;
+  const idLine = /ת\.?ז|תעודת זהות|\bID\b/i;
+  for (const line of lines) {
+    if (labelled.test(line)) {
+      // The number right after the label, so an ID on the same line is not picked.
+      const after = line.slice(line.search(labelled));
+      const n = longNumber(after.replace(/(ת\.?ז\.?|תעודת זהות)[^\d]*[\d -]+/g, ''));
+      if (n) return n;
+    }
+  }
+  for (const line of lines) if (!idLine.test(line)) {
+    const n = longNumber(line);
+    if (n) return n;
+  }
+  return null;
+}
+
 // --- parsing values ------------------------------------------------------------
 
 /** "1,234.50", "‏-1,234.50 ₪", "1,234.50-", "(1,234.50)" → number; null if not a number. */
@@ -231,8 +266,10 @@ export function applyMapping(rows: string[][], m: TableMapping): TableResult {
       amount,
       original_amount: origAmount == null ? null : Math.sign(amount) * Math.abs(origAmount),
       original_currency: origCurrency,
-      description,
-      memo: m.memo_col != null ? row[m.memo_col] || null : null,
+      // Stored masked: transfer lines often carry someone's full account number or a policy
+      // number. The de-duplication id above still uses the original text.
+      description: maskIdentifiers(description),
+      memo: m.memo_col != null ? maskIdentifiers(row[m.memo_col] ?? '') || null : null,
       installments: m.installments_col != null ? parseInstallments(row[m.installments_col]) : null,
       status: 'completed',
     });

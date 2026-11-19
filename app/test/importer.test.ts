@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import * as XLSX from 'xlsx';
 import {
-  applyMapping, hash, maskIdentifiers, maskRows, parseDate, parseNumber, readSpreadsheet, toBase64, upcomingCardCharges, validateMapping,
+  applyMapping, findHeaderRow, hash, localAccountHint, maskIdentifiers, maskRows, parseDate, parseNumber, readSpreadsheet, toBase64, upcomingCardCharges, validateMapping,
   type TableMapping,
 } from '../src/lib/importer';
 
@@ -130,3 +130,28 @@ test('identifiers are masked before leaving the device; amounts and dates are no
   assert.equal(rows[0][0], 'חשבון 123-456789', 'originals untouched');
 });
 
+
+test('title lines with personal details are found and kept on the device', () => {
+  const rows = [
+    ['בנק מזרחי טפחות - תנועות בחשבון'],
+    ['שם: ישראל ישראלי    ת.ז. 034567891'],
+    ['חשבון: 20-418-123456789    סניף 418'],
+    ['תאריך', 'תיאור', 'זכות', 'חובה', 'יתרה'],
+    ['01/11/2026', 'משכורת', '18,500.00', '', '20,100.00'],
+  ];
+  assert.equal(findHeaderRow(rows), 3);
+  assert.equal(localAccountHint(rows, 3), '6789', 'the account line, not the ID line above it');
+  assert.equal(localAccountHint([['ת.ז. 034567891 חשבון 12-345-678901'], ['תאריך', 'a', 'b']], 1), '8901');
+  assert.equal(localAccountHint([['כרטיס מספר 4580-1234-5678-4321'], ['תאריך', 'a', 'b']], 1), '4321');
+  assert.equal(localAccountHint([['ת.ז. 034567891'], ['תאריך', 'a', 'b']], 1), null, 'never the ID');
+  assert.equal(findHeaderRow([['a', 'b'], ['1', '2']]), -1);
+});
+
+test('descriptions are stored masked; re-uploading the same file still de-duplicates', () => {
+  const rows = [['תאריך', 'תיאור', 'סכום'], ['02/11/2026', 'העברה לדנה כהן ח-ן 12-345-678901', '-1200']];
+  const m = { ...base, amount_col: 2 };
+  const [t] = applyMapping(rows, m).transactions;
+  assert.equal(t.description, 'העברה לדנה כהן ח-ן •••8901');
+  assert.equal(t.external_id, applyMapping(rows, m).transactions[0].external_id);
+  assert.equal(t.external_id, hash('2026-11-02|-1200|העברה לדנה כהן ח-ן 12-345-678901|1'), 'id from the original text, as before');
+});
