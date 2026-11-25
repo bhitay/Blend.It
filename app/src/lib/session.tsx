@@ -74,6 +74,17 @@ export function SessionProvider({ children }: { children: ReactNode }) {
 
   const refreshHousehold = useCallback(() => loadHousehold(session), [loadHousehold, session]);
 
+  // Re-check membership whenever the app comes back to the screen, so someone removed
+  // from the household (or newly approved) sees the change without restarting.
+  useEffect(() => {
+    if (typeof document === 'undefined' || !session) return;
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') loadHousehold(session);
+    };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => document.removeEventListener('visibilitychange', onVisible);
+  }, [session, loadHousehold]);
+
   return (
     <Ctx.Provider
       value={{ loading, session, household, members, mfaRequired: mfa.required, mfaEnabled: mfa.enabled, loadError, refreshHousehold }}
@@ -102,6 +113,6 @@ export function useOwnerLabel() {
   return (ownerUserId: string | null) => {
     if (!ownerUserId) return 'משותף';
     if (ownerUserId === userId) return 'שלי';
-    return members.find((m) => m.user_id === ownerUserId)?.display_name ?? 'לא ידוע';
+    return members.find((m) => m.user_id === ownerUserId)?.display_name ?? 'חבר/ה לשעבר';
   };
 }

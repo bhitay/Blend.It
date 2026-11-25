@@ -1,72 +1,73 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { Pressable, Share, View } from 'react-native';
+import { Alert, Platform, Pressable, View } from 'react-native';
+import InviteCard from '@/components/InviteCard';
+import JoinRequests from '@/components/JoinRequests';
 import { Button, Card, colors, ErrorText, Screen, SectionTitle, Text, styles } from '@/components/ui';
-import { regenerateInvite } from '@/lib/api';
+import { removeMember } from '@/lib/api';
 import { useHousehold, useSession } from '@/lib/session';
 import { supabase } from '@/lib/supabase';
 
 export default function Settings() {
   const { household, members, userId, refreshHousehold } = useHousehold();
-  const { mfaEnabled } = useSession();
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const isOwner = members.find((m) => m.user_id === userId)?.role === 'owner';
-  const full = members.length >= household.max_members;
+  const [removing, setRemoving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  async function newCode() {
-    setBusy(true);
+  async function remove(memberId: string, name: string) {
+    const msg = `${name} יאבד/תאבד מיד את הגישה לכל הנתונים של משק הבית. החשבונות וההיסטוריה שלו/ה נשארים אצלכם. אפשר להזמין שוב בהמשך.`;
+    const ok =
+      Platform.OS === 'web'
+        ? Boolean(globalThis.confirm?.(`להסיר את ${name}?\n\n${msg}`))
+        : await new Promise<boolean>((resolve) =>
+            Alert.alert(`להסיר את ${name}?`, msg, [
+              { text: 'ביטול', style: 'cancel', onPress: () => resolve(false) },
+              { text: 'הסרה', style: 'destructive', onPress: () => resolve(true) },
+            ]),
+          );
+    if (!ok) return;
+    setRemoving(true);
     setError(null);
     try {
-      await regenerateInvite(household.id);
+      await removeMember(household.id, memberId);
       await refreshHousehold();
     } catch (e) {
       setError((e as Error).message);
     } finally {
-      setBusy(false);
+      setRemoving(false);
     }
   }
+  const { mfaEnabled } = useSession();
 
   return (
     <Screen>
+      <JoinRequests />
       <SectionTitle>משק הבית</SectionTitle>
       <Card>
         <Text style={{ fontSize: 18, fontWeight: '700' }}>{household.name}</Text>
         {members.map((m) => (
           <View key={m.user_id} style={styles.row}>
-            <Text>{m.display_name}</Text>
+            <Text style={{ flex: 1 }}>{m.display_name}</Text>
             <Text style={styles.muted}>{m.user_id === userId ? 'את/ה' : m.role === 'owner' ? 'מנהל/ת' : 'חבר/ה'}</Text>
+            {isOwner && m.user_id !== userId && m.role !== 'owner' ? (
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={`הסרת ${m.display_name}`}
+                onPress={() => remove(m.user_id, m.display_name)}
+                hitSlop={8}
+                disabled={removing}
+              >
+                <Text style={{ color: colors.negative, fontWeight: '600' }}>הסרה</Text>
+              </Pressable>
+            ) : null}
           </View>
         ))}
+        <ErrorText>{error}</ErrorText>
       </Card>
 
-      {household.invite_open && !full ? (
-        <>
-          <SectionTitle>הזמנת בן/בת הזוג</SectionTitle>
-          <Card>
-            <Text style={styles.muted}>
-              שלחו את הקוד. אחרי ההרשמה בוחרים "הצטרפות עם קוד" ומזינים אותו. אחרי ההצטרפות הקוד מפסיק לעבוד.
-            </Text>
-            <Text selectable style={{ fontSize: 24, fontWeight: '800', letterSpacing: 3, textAlign: 'center', color: colors.primary }}>
-              {household.invite_code}
-            </Text>
-            <Button
-              title="שליחת הקוד"
-              variant="secondary"
-              onPress={() => Share.share({ message: `קוד ההצטרפות שלנו ל-BlendIt: ${household.invite_code}` }).catch(() => {})}
-            />
-          </Card>
-        </>
-      ) : (
-        <Text style={[styles.muted, { fontSize: 13 }]}>
-          {full ? 'משק הבית מלא. קוד ההזמנה סגור ואי אפשר להצטרף.' : 'קוד ההזמנה סגור.'}
-        </Text>
-      )}
-      {isOwner && !full && !household.invite_open ? (
-        <Button title="יצירת קוד הזמנה חדש" variant="secondary" onPress={newCode} loading={busy} />
-      ) : null}
-      <ErrorText>{error}</ErrorText>
+      <SectionTitle>הוספת חבר</SectionTitle>
+      <InviteCard />
 
       <SectionTitle>אבטחה</SectionTitle>
       <Pressable accessibilityRole="button" onPress={() => router.push('/mfa-setup')}>

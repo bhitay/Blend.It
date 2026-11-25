@@ -3,6 +3,7 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { router } from 'expo-router';
 import { Pressable, RefreshControl, ScrollView, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import JoinRequests from '@/components/JoinRequests';
 import { Button, Card, colors, ErrorText, Loading, SectionTitle, Text, styles } from '@/components/ui';
 import { GROUPS, KINDS } from '@/lib/accountKinds';
 import { daysSince, formatMoney } from '@/lib/format';
@@ -30,6 +31,7 @@ export default function Overview() {
         contentContainerStyle={styles.screenContent}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} />}
       >
+        <JoinRequests />
         <Card style={{ alignItems: 'stretch' }}>
           <Text style={styles.muted}>שווי נקי משפחתי</Text>
           <PrivateText
