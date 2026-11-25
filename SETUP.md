@@ -94,6 +94,8 @@ Vercel מפרסם את הענף `main` כאתר הקבוע. הקוד נמצא כ
 3. **אימות דו-שלבי באפליקציה:** **הגדרות ← אבטחה ← אימות דו-שלבי ← הפעלה**. סורקים את הקוד באפליקציית אימות ומזינים את הקוד שמופיע. כל אחד מכם בנפרד.
 4. **אימות דו-שלבי בחשבונות:** GitHub, Supabase, Vercel, Anthropic והמייל.
 
+5. **כניסה עם Face ID (Passkeys):** ב-Supabase, **Authentication ← Passkeys** ← מפעילים. ב-**Relying Party ID** מזינים את הדומיין של האפליקציה (למשל `blend-it.vercel.app`), וב-**Origins** את הכתובת המלאה (`https://blend-it.vercel.app`). אחר כך באפליקציה: **הגדרות ← Face ID**.
+
 הפירוט המלא: [SECURITY.md](SECURITY.md).
 
 ## ז. שימוש חודשי

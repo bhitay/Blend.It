@@ -1,6 +1,9 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, View } from 'react-native';
 import { Button, Card, colors, ErrorText, Field, Screen, Text, styles } from '@/components/ui';
+import { isAvailable } from '@/lib/deviceAuth';
+import { signInWithPasskey } from '@/lib/passkeys';
+import { usePrivacy } from '@/lib/privacy';
 import { supabase } from '@/lib/supabase';
 
 export default function SignIn() {
@@ -10,6 +13,25 @@ export default function SignIn() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
+  const [faceId, setFaceId] = useState(false);
+  const { signedInJustNow } = usePrivacy();
+
+  useEffect(() => {
+    isAvailable().then(setFaceId);
+  }, []);
+
+  async function passkey() {
+    setError(null);
+    setBusy(true);
+    try {
+      await signInWithPasskey();
+      signedInJustNow();
+    } catch (e) {
+      setError((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  }
 
   async function submit() {
     setError(null);
@@ -28,6 +50,8 @@ export default function SignIn() {
     } else if (mode === 'up' && !data.session) {
       setInfo('נשלח אליך מייל אימות. אחרי האישור חזרו לכאן והתחברו.');
       setMode('in');
+    } else if (data.session) {
+      signedInJustNow();
     }
   }
 
@@ -61,6 +85,7 @@ export default function SignIn() {
           {info ? <Text style={{ color: colors.positive }}>{info}</Text> : null}
           <Button title={mode === 'in' ? 'התחברות' : 'יצירת משתמש'} onPress={submit} loading={busy} />
         </Card>
+        {faceId && mode === 'in' ? <Button title="כניסה עם Face ID" variant="secondary" onPress={passkey} /> : null}
         <Pressable onPress={() => setMode(mode === 'in' ? 'up' : 'in')} accessibilityRole="button">
           <Text style={{ textAlign: 'center', color: colors.primary, fontWeight: '600' }}>
             {mode === 'in' ? 'אין לך משתמש? הרשמה' : 'כבר רשומים? התחברות'}
