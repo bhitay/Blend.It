@@ -82,9 +82,41 @@ export async function regenerateInvite(householdId: string): Promise<void> {
   check(await supabase.rpc('regenerate_invite', { hid: householdId }));
 }
 
-export async function joinHousehold(code: string, memberName: string): Promise<void> {
-  const res = await supabase.rpc('join_household', { code, member_name: memberName });
-  if (res.error?.message.includes('invalid invite code')) throw new Error('קוד ההזמנה לא נמצא');
+/**
+ * Asks to join with an invite code. The owner must approve before any data is visible.
+ * Returns 'pending' (waiting for approval) or 'member' (already a member).
+ */
+export async function requestJoin(code: string, memberName: string): Promise<'pending' | 'member'> {
+  const res = await supabase.rpc('request_join', { code, member_name: memberName });
+  if (res.error?.message.includes('invalid invite code')) throw new Error('קוד ההזמנה לא נמצא, או שמשק הבית כבר מלא');
+  return check(res) as 'pending' | 'member';
+}
+
+export type MyJoinRequest = { id: string; status: 'pending' | 'approved' | 'rejected' | 'cancelled'; created_at: string };
+
+/** The current user's latest join request, if any (only their own rows are visible). */
+export async function fetchMyJoinRequest(): Promise<MyJoinRequest | null> {
+  const rows = check(
+    await supabase.from('join_requests').select('id, status, created_at').order('created_at', { ascending: false }).limit(1),
+  ) as MyJoinRequest[];
+  return rows[0] ?? null;
+}
+
+export async function cancelJoinRequest(): Promise<void> {
+  check(await supabase.rpc('cancel_join_request'));
+}
+
+export type JoinRequest = { id: string; display_name: string; email: string | null; created_at: string };
+
+/** Owner only: pending requests to the household, with the requester's email. */
+export async function fetchJoinRequests(householdId: string): Promise<JoinRequest[]> {
+  return check(await supabase.rpc('list_join_requests', { hid: householdId })) as JoinRequest[];
+}
+
+/** Owner only. */
+export async function decideJoinRequest(requestId: string, approve: boolean): Promise<void> {
+  const res = await supabase.rpc('decide_join_request', { request_id: requestId, approve });
+  if (res.error?.message.includes('household is full')) throw new Error('משק הבית מלא');
   check(res);
 }
 

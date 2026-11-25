@@ -2,6 +2,7 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { router } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, Share, View } from 'react-native';
+import JoinRequests from '@/components/JoinRequests';
 import { Button, Card, colors, ErrorText, Screen, SectionTitle, Text, styles } from '@/components/ui';
 import { regenerateInvite } from '@/lib/api';
 import { useHousehold, useSession } from '@/lib/session';
@@ -30,6 +31,7 @@ export default function Settings() {
 
   return (
     <Screen>
+      <JoinRequests />
       <SectionTitle>משק הבית</SectionTitle>
       <Card>
         <Text style={{ fontSize: 18, fontWeight: '700' }}>{household.name}</Text>
@@ -46,7 +48,8 @@ export default function Settings() {
           <SectionTitle>הזמנת בן/בת הזוג</SectionTitle>
           <Card>
             <Text style={styles.muted}>
-              שלחו את הקוד. אחרי ההרשמה בוחרים "הצטרפות עם קוד" ומזינים אותו. אחרי ההצטרפות הקוד מפסיק לעבוד.
+              שלחו את הקוד. אחרי ההרשמה בוחרים "הצטרפות עם קוד" ומזינים אותו. הבקשה תופיע כאן לאישור שלכם, ורק
+              אחרי האישור תהיה גישה לנתונים.
             </Text>
             <Text selectable style={{ fontSize: 24, fontWeight: '800', letterSpacing: 3, textAlign: 'center', color: colors.primary }}>
               {household.invite_code}

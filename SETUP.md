@@ -88,8 +88,9 @@ Vercel מפרסם את הענף `main` כאתר הקבוע. הקוד נמצא כ
 
 ## ו. אבטחה (כ-10 דקות, פעם אחת)
 
-1. **Supabase:** ב-**SQL Editor** מריצים את
-   [`supabase/migrations/0003_security.sql`](https://github.com/bhitay/Blend.It/blob/main/supabase/migrations/0003_security.sql).
+1. **Supabase:** ב-**SQL Editor** מריצים, לפי הסדר:
+   - [`supabase/migrations/0003_security.sql`](https://github.com/bhitay/Blend.It/blob/main/supabase/migrations/0003_security.sql)
+   - [`supabase/migrations/0004_join_requests.sql`](https://github.com/bhitay/Blend.It/blob/main/supabase/migrations/0004_join_requests.sql): הצטרפות למשק הבית רק באישור המנהל.
 2. **סגירת הרשמה**, אחרי ששניכם רשומים: **Authentication ← Sign In / Providers**, מכבים את **Allow new users to sign up**, ולוחצים **Save**.
 3. **אימות דו-שלבי באפליקציה:** **הגדרות ← אבטחה ← אימות דו-שלבי ← הפעלה**. סורקים את הקוד באפליקציית אימות ומזינים את הקוד שמופיע. כל אחד מכם בנפרד.
 4. **אימות דו-שלבי בחשבונות:** GitHub, Supabase, Vercel, Anthropic והמייל.
