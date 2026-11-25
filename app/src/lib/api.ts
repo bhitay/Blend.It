@@ -91,6 +91,11 @@ export async function createInvite(householdId: string): Promise<void> {
   check(res);
 }
 
+/** Owner only: removes a member. Their access ends immediately; their accounts stay in the household. */
+export async function removeMember(householdId: string, memberUserId: string): Promise<void> {
+  check(await supabase.rpc('remove_member', { hid: householdId, member_user_id: memberUserId }));
+}
+
 /** Owner only: withdraw the current invite code. */
 export async function revokeInvite(householdId: string): Promise<void> {
   check(await supabase.rpc('revoke_invite', { hid: householdId }));

@@ -93,6 +93,7 @@ Vercel מפרסם את הענף `main` כאתר הקבוע. הקוד נמצא כ
    - [`supabase/migrations/0003_security.sql`](https://github.com/bhitay/Blend.It/blob/main/supabase/migrations/0003_security.sql)
    - [`supabase/migrations/0004_join_requests.sql`](https://github.com/bhitay/Blend.It/blob/main/supabase/migrations/0004_join_requests.sql): הצטרפות למשק הבית רק באישור המנהל.
    - [`supabase/migrations/0005_one_time_invites.sql`](https://github.com/bhitay/Blend.It/blob/main/supabase/migrations/0005_one_time_invites.sql): קוד הזמנה חד-פעמי ל-15 דקות, במקום קוד קבוע.
+   - [`supabase/migrations/0006_remove_member.sql`](https://github.com/bhitay/Blend.It/blob/main/supabase/migrations/0006_remove_member.sql): המנהל יכול להסיר חבר.
 2. **סגירת הרשמה**, אחרי ששניכם רשומים: **Authentication ← Sign In / Providers**, מכבים את **Allow new users to sign up**, ולוחצים **Save**.
 3. **אימות דו-שלבי באפליקציה:** **הגדרות ← אבטחה ← אימות דו-שלבי ← הפעלה**. סורקים את הקוד באפליקציית אימות ומזינים את הקוד שמופיע. כל אחד מכם בנפרד.
 4. **אימות דו-שלבי בחשבונות:** GitHub, Supabase, Vercel, Anthropic והמייל.
