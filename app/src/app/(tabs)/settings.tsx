@@ -46,23 +46,34 @@ export default function Settings() {
       <SectionTitle>משק הבית</SectionTitle>
       <Card>
         <Text style={{ fontSize: 18, fontWeight: '700' }}>{household.name}</Text>
-        {members.map((m) => (
-          <View key={m.user_id} style={styles.row}>
-            <Text style={{ flex: 1 }}>{m.display_name}</Text>
-            <Text style={styles.muted}>{m.user_id === userId ? 'את/ה' : m.role === 'owner' ? 'מנהל/ת' : 'חבר/ה'}</Text>
-            {isOwner && m.user_id !== userId && m.role !== 'owner' ? (
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel={`הסרת ${m.display_name}`}
-                onPress={() => remove(m.user_id, m.display_name)}
-                hitSlop={8}
-                disabled={removing}
-              >
-                <Text style={{ color: colors.negative, fontWeight: '600' }}>הסרה</Text>
-              </Pressable>
-            ) : null}
-          </View>
-        ))}
+        {members.map((m) => {
+          const removable = isOwner && m.user_id !== userId && m.role !== 'owner';
+          return (
+            <View key={m.user_id} style={[styles.row, { minHeight: 36 }]}>
+              <Text style={{ flex: 1 }}>{m.display_name}</Text>
+              <Text style={[styles.muted, { minWidth: 56, textAlign: 'center' }]}>
+                {m.user_id === userId ? 'את/ה' : m.role === 'owner' ? 'מנהל/ת' : 'חבר/ה'}
+              </Text>
+              {/* Same width in every row (trash or empty), so the labels line up. */}
+              {isOwner ? (
+                <View style={{ width: 32, alignItems: 'center' }}>
+                  {removable ? (
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel={`הסרת ${m.display_name}`}
+                      onPress={() => remove(m.user_id, m.display_name)}
+                      hitSlop={10}
+                      disabled={removing}
+                      style={({ pressed }) => ({ opacity: pressed || removing ? 0.5 : 1 })}
+                    >
+                      <Ionicons name="trash-outline" size={20} color={colors.negative} />
+                    </Pressable>
+                  ) : null}
+                </View>
+              ) : null}
+            </View>
+          );
+        })}
         <ErrorText>{error}</ErrorText>
       </Card>
 
