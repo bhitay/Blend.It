@@ -4,7 +4,8 @@ import { I18nManager, Platform } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { Button, Card, colors, Loading, Screen, Text, styles } from '@/components/ui';
 import { PrivacyToggle } from '@/components/PrivateText';
-import { PrivacyProvider } from '@/lib/privacy';
+import LockScreen from '@/components/LockScreen';
+import { PrivacyProvider, usePrivacy } from '@/lib/privacy';
 import { SessionProvider, useSession } from '@/lib/session';
 import { isConfigured } from '@/lib/supabase';
 import NotConfigured from '@/components/NotConfigured';
@@ -21,8 +22,10 @@ if (Platform.OS === 'web') {
 
 function RootNavigator() {
   const { loading, session, household, mfaRequired, loadError, refreshHousehold } = useSession();
+  const { locked } = usePrivacy();
   if (!isConfigured) return <NotConfigured />;
   if (loading) return <Loading />;
+  if (locked && !mfaRequired) return <LockScreen />;
   if (session && !mfaRequired && !household && loadError) {
     return <LoadFailed message={loadError} onRetry={refreshHousehold} />;
   }
@@ -58,6 +61,7 @@ function RootNavigator() {
         <Stack.Screen name="account/edit" options={{ title: 'עריכת חשבון', presentation: 'modal' }} />
         <Stack.Screen name="group/[id]" options={{ title: '' }} />
         <Stack.Screen name="mfa-setup" options={{ title: 'אימות דו-שלבי', presentation: 'modal' }} />
+        <Stack.Screen name="face-id" options={{ title: 'Face ID', presentation: 'modal' }} />
         <Stack.Screen name="category" options={{ title: 'סיווג', presentation: 'modal' }} />
       </Stack.Protected>
     </Stack>

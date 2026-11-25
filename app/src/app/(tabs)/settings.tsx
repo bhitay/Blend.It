@@ -80,6 +80,17 @@ export default function Settings() {
         </Card>
       </Pressable>
 
+      <Pressable accessibilityRole="button" onPress={() => router.push('/face-id')}>
+        <Card style={[styles.row, { paddingVertical: 14 }] as never}>
+          <Ionicons name="scan-outline" size={22} color={colors.primary} />
+          <View style={{ flex: 1, gap: 2 }}>
+            <Text style={{ fontWeight: '600' }}>Face ID</Text>
+            <Text style={[styles.muted, { fontSize: 13 }]}>כניסה, הצגת סכומים ונעילת האפליקציה</Text>
+          </View>
+          <Ionicons name="chevron-back" size={18} color={colors.muted} />
+        </Card>
+      </Pressable>
+
       <Button title="התנתקות" variant="danger" onPress={() => supabase.auth.signOut()} />
     </Screen>
   );
