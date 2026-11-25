@@ -1,3 +1,4 @@
+import { PrivateText } from '@/components/PrivateText';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { router } from 'expo-router';
 import { Pressable, RefreshControl, ScrollView, View } from 'react-native';
@@ -31,12 +32,12 @@ export default function Overview() {
       >
         <Card style={{ alignItems: 'stretch' }}>
           <Text style={styles.muted}>שווי נקי משפחתי</Text>
-          <Text
+          <PrivateText
             style={{ fontSize: 36, fontWeight: '800', color: netWorth < 0 ? colors.negative : colors.text }}
             accessibilityLabel={`שווי נקי ${formatMoney(netWorth)}`}
           >
             {formatMoney(netWorth)}
-          </Text>
+          </PrivateText>
           <View style={styles.row}>
             <Stat label="נכסים" value={assets} />
             <Stat label="התחייבויות" value={debts} />
@@ -70,9 +71,9 @@ export default function Overview() {
                     <Text style={{ fontWeight: '600' }}>{g.label}</Text>
                     <Text style={styles.muted}>{g.count === 1 ? 'חשבון אחד' : `${g.count} חשבונות`}</Text>
                   </View>
-                  <Text style={{ fontWeight: '700', color: g.total < 0 ? colors.negative : colors.text }}>
+                  <PrivateText style={{ fontWeight: '700', color: g.total < 0 ? colors.negative : colors.text }}>
                     {formatMoney(g.total)}
-                  </Text>
+                  </PrivateText>
                   <Ionicons name="chevron-back" size={18} color={colors.muted} />
                 </Pressable>
               ))}
@@ -97,7 +98,7 @@ function Stat({ label, value }: { label: string; value: number }) {
   return (
     <View style={{ flex: 1 }}>
       <Text style={styles.muted}>{label}</Text>
-      <Text style={{ fontWeight: '700', color: value < 0 ? colors.negative : colors.text }}>{formatMoney(value)}</Text>
+      <PrivateText style={{ fontWeight: '700', color: value < 0 ? colors.negative : colors.text }}>{formatMoney(value)}</PrivateText>
     </View>
   );
 }

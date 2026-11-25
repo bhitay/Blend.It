@@ -1,3 +1,4 @@
+import { PrivateText } from '@/components/PrivateText';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { Pressable, RefreshControl, ScrollView, View } from 'react-native';
@@ -28,7 +29,7 @@ export default function GroupScreen() {
       <ScrollView contentContainerStyle={styles.screenContent} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} />}>
         <Card>
           <Text style={styles.muted}>סה"כ</Text>
-          <Text style={{ fontSize: 30, fontWeight: '800', color: total < 0 ? colors.negative : colors.text }}>{formatMoney(total)}</Text>
+          <PrivateText style={{ fontSize: 30, fontWeight: '800', color: total < 0 ? colors.negative : colors.text }}>{formatMoney(total)}</PrivateText>
           <Text style={styles.muted}>{items.length === 1 ? 'חשבון אחד' : `${items.length} חשבונות`}</Text>
         </Card>
 
@@ -51,12 +52,12 @@ export default function GroupScreen() {
                       {[KINDS[a.kind].label, institutionLabel(a.institution), ownerLabel(a.owner_user_id)].filter(Boolean).join(' · ')}
                     </Text>
                   </View>
-                  <Text style={{ fontWeight: '800', fontSize: 17, color: a.signed_balance < 0 ? colors.negative : colors.text }}>
+                  <PrivateText style={{ fontWeight: '800', fontSize: 17, color: a.signed_balance < 0 ? colors.negative : colors.text }}>
                     {a.balance == null ? '—' : formatMoney(a.signed_balance)}
-                  </Text>
+                  </PrivateText>
                   <Ionicons name="chevron-back" size={18} color={colors.muted} />
                 </View>
-                {line ? <Text style={{ fontSize: 14 }}>{line}</Text> : null}
+                {line ? <PrivateText style={{ fontSize: 14 }}>{line}</PrivateText> : null}
                 <View style={styles.row}>
                   <Text style={[styles.muted, { fontSize: 12 }]}>
                     {a.balance_as_of ? `עודכן ${formatDate(a.balance_as_of)}` : 'אין יתרה'}

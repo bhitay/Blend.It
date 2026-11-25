@@ -1,3 +1,4 @@
+import { PrivateText } from '@/components/PrivateText';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { Switch, View } from 'react-native';
@@ -47,7 +48,7 @@ export default function CategoryScreen() {
     <Screen>
       <Card>
         <Text style={{ fontSize: 18, fontWeight: '700' }}>{params.description}</Text>
-        {amount ? <Text style={styles.muted}>{formatMoney(amount, 'ILS', true)}</Text> : null}
+        {amount ? <PrivateText style={styles.muted}>{formatMoney(amount, 'ILS', true)}</PrivateText> : null}
         <Text style={[styles.muted, { fontSize: 13 }]}>הסיווג יחול על כל התנועות מבית העסק הזה, גם בעתיד.</Text>
       </Card>
       {groups.map((g) => (

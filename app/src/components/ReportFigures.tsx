@@ -1,3 +1,4 @@
+import { PrivateText } from './PrivateText';
 import { View } from 'react-native';
 import type { Account, AccountDetails } from '@/lib/api';
 import { formatDate, formatMoney } from '@/lib/format';
@@ -40,14 +41,14 @@ export function ReportFigures({ account }: { account: Account }) {
       {visible.map(([label, value], i) => (
         <View key={label} style={[styles.row, { paddingVertical: 10 }, i > 0 && { borderTopWidth: 1, borderTopColor: colors.border }]}>
           <Text style={styles.muted}>{label}</Text>
-          <Text style={{ fontWeight: '600' }}>{value}</Text>
+          <PrivateText style={{ fontWeight: '600' }}>{value}</PrivateText>
         </View>
       ))}
       {(d.tracks ?? []).map((t, i) => (
         <View key={`${t.name}-${i}`} style={{ paddingVertical: 10, borderTopWidth: 1, borderTopColor: colors.border, gap: 2 }}>
           <View style={styles.row}>
             <Text style={{ fontWeight: '600', flex: 1 }}>{t.name}</Text>
-            <Text style={{ fontWeight: '600' }}>{t.balance != null ? formatMoney(t.balance) : '—'}</Text>
+            <PrivateText style={{ fontWeight: '600' }}>{t.balance != null ? formatMoney(t.balance) : '—'}</PrivateText>
           </View>
           <Text style={[styles.muted, { fontSize: 13 }]}>
             {[t.interest_rate_pct != null ? `ריבית ${t.interest_rate_pct}%` : null, t.indexation, t.end_date ? `עד ${formatDate(t.end_date)}` : null]
@@ -59,9 +60,9 @@ export function ReportFigures({ account }: { account: Account }) {
       {(d.highlights ?? []).length ? (
         <View style={{ paddingVertical: 10, borderTopWidth: visible.length ? 1 : 0, borderTopColor: colors.border, gap: 4 }}>
           {d.highlights!.map((h) => (
-            <Text key={h} style={[styles.muted, { fontSize: 13 }]}>
-              • {h}
-            </Text>
+            <PrivateText key={h} style={[styles.muted, { fontSize: 13 }]}>
+              {`• ${h}`}
+            </PrivateText>
           ))}
         </View>
       ) : null}
@@ -80,8 +81,8 @@ export function InsightCard({ insight }: { insight: Insight }) {
         gap: 4,
       }}
     >
-      <Text style={{ fontWeight: '700', color: warn ? colors.warning : good ? colors.positive : colors.text }}>{insight.title}</Text>
-      <Text style={[styles.muted, { fontSize: 14 }]}>{insight.body}</Text>
+      <PrivateText style={{ fontWeight: '700', color: warn ? colors.warning : good ? colors.positive : colors.text }}>{insight.title}</PrivateText>
+      <PrivateText style={[styles.muted, { fontSize: 14 }]}>{insight.body}</PrivateText>
     </Card>
   );
 }
