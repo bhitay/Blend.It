@@ -12,6 +12,8 @@ type SessionState = {
   /** Signed in, but two-step verification is on and this session hasn't passed it yet. */
   mfaRequired: boolean;
   mfaEnabled: boolean;
+  /** Loading the household failed (e.g. no network): show a retry, not the onboarding screen. */
+  loadError: string | null;
   refreshHousehold: () => Promise<void>;
 };
 
@@ -23,6 +25,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const [members, setMembers] = useState<Member[]>([]);
   const [loading, setLoading] = useState(isConfigured);
   const [mfa, setMfa] = useState({ enabled: false, required: false });
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   const loadHousehold = useCallback(async (s: Session | null) => {
     if (!s) {
@@ -41,10 +44,13 @@ export function SessionProvider({ children }: { children: ReactNode }) {
         return;
       }
       const h = await fetchHousehold(s.user.id);
+      setLoadError(null);
       setHousehold(h);
       setMembers(h ? await fetchMembers(h.id) : []);
     } catch (e) {
+      // Keep what we had: a network error must not look like "no household" (onboarding).
       console.warn('loading household failed', e);
+      setLoadError((e as Error).message ?? 'שגיאה');
     }
   }, []);
 
@@ -70,7 +76,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
 
   return (
     <Ctx.Provider
-      value={{ loading, session, household, members, mfaRequired: mfa.required, mfaEnabled: mfa.enabled, refreshHousehold }}
+      value={{ loading, session, household, members, mfaRequired: mfa.required, mfaEnabled: mfa.enabled, loadError, refreshHousehold }}
     >
       {children}
     </Ctx.Provider>

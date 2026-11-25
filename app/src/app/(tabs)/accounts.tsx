@@ -1,3 +1,4 @@
+import { PrivateText } from '@/components/PrivateText';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { router } from 'expo-router';
 import { Platform, Pressable, RefreshControl, SectionList, View } from 'react-native';
@@ -61,9 +62,9 @@ export default function Accounts() {
               </Text>
             </View>
             <View style={{ alignItems: 'flex-end', gap: 2 }}>
-              <Text style={{ fontWeight: '700', color: a.signed_balance < 0 ? colors.negative : colors.text }}>
+              <PrivateText style={{ fontWeight: '700', color: a.signed_balance < 0 ? colors.negative : colors.text }}>
                 {a.balance == null ? '—' : formatMoney(a.signed_balance, a.currency)}
-              </Text>
+              </PrivateText>
               <Text style={[styles.muted, { fontSize: 12 }]}>{formatDate(a.balance_as_of)}</Text>
             </View>
           </Pressable>

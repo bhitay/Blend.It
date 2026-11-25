@@ -1,6 +1,7 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { Tabs } from 'expo-router';
 import type { ColorValue } from 'react-native';
+import { PrivacyToggle } from '@/components/PrivateText';
 import { colors } from '@/components/ui';
 
 type IconName = keyof typeof Ionicons.glyphMap;
@@ -19,6 +20,7 @@ export default function TabsLayout() {
         headerStyle: { backgroundColor: colors.bg },
         headerShadowVisible: false,
         sceneStyle: { backgroundColor: colors.bg },
+        headerRight: () => <PrivacyToggle />,
       }}
     >
       <Tabs.Screen name="index" options={{ title: 'סקירה', tabBarIcon: icon('pie-chart-outline') }} />

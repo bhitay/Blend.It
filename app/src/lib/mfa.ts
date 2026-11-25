@@ -9,12 +9,18 @@ export type MfaState = { enabled: boolean; required: boolean };
 
 /** enabled: the user has a verified factor. required: this session still needs the code. */
 export async function getMfaState(): Promise<MfaState> {
-  const { data, error } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
-  if (error || !data) return { enabled: false, required: false };
-  return {
-    enabled: data.nextLevel === 'aal2',
-    required: data.nextLevel === 'aal2' && data.currentLevel !== 'aal2',
-  };
+  // Never throws: the database enforces the second step anyway, so a failed check here
+  // must not derail loading the household (which would wrongly show the onboarding screen).
+  try {
+    const { data, error } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+    if (error || !data) return { enabled: false, required: false };
+    return {
+      enabled: data.nextLevel === 'aal2',
+      required: data.nextLevel === 'aal2' && data.currentLevel !== 'aal2',
+    };
+  } catch {
+    return { enabled: false, required: false };
+  }
 }
 
 async function totpFactors() {

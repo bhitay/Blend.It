@@ -1,7 +1,9 @@
+import { PrivateText } from '@/components/PrivateText';
 import { router, Stack, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { Alert, Platform, Pressable, View } from 'react-native';
 import { InsightCard, ReportFigures } from '@/components/ReportFigures';
+import { PrivacyToggle } from '@/components/PrivateText';
 import { Button, Card, colors, ErrorText, Field, Loading, Screen, SectionTitle, Text, styles } from '@/components/ui';
 import {
   deleteAccount,
@@ -53,6 +55,8 @@ export default function AccountDetails() {
   const sign = account.is_liability ? -1 : 1;
   const insights = accountInsights({ name: account.name, kind: account.kind, details: account.details }, todayISO());
   const editButton = (
+    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+    <PrivacyToggle />
     <Pressable
       accessibilityRole="button"
       onPress={() => router.push({ pathname: '/account/edit', params: { id: account.id } })}
@@ -60,6 +64,7 @@ export default function AccountDetails() {
     >
       <Text style={{ color: colors.primary, fontWeight: '600' }}>עריכה</Text>
     </Pressable>
+    </View>
   );
 
   async function saveBalance() {
@@ -103,9 +108,9 @@ export default function AccountDetails() {
             .filter(Boolean)
             .join(' · ')}
         </Text>
-        <Text style={{ fontSize: 32, fontWeight: '800', color: account.signed_balance < 0 ? colors.negative : colors.text }}>
+        <PrivateText style={{ fontSize: 32, fontWeight: '800', color: account.signed_balance < 0 ? colors.negative : colors.text }}>
           {account.balance == null ? '—' : formatMoney(account.signed_balance, account.currency)}
-        </Text>
+        </PrivateText>
         <Text style={styles.muted}>
           {account.balance_as_of ? `עודכן ${formatDate(account.balance_as_of)}` : 'עוד לא הוזנה יתרה'}
           {imported ? ' · מתעדכן מקבצים' : ' · הזנה ידנית'}
@@ -169,7 +174,7 @@ export default function AccountDetails() {
               >
                 <View style={{ flex: 1, gap: 2 }}>
                   <Text numberOfLines={1}>{t.description}</Text>
-                  <Text style={[styles.muted, { fontSize: 12 }]}>
+                  <PrivateText style={[styles.muted, { fontSize: 12 }]}>
                     {[
                       formatDate(t.date),
                       t.category ?? 'לא מסווג',
@@ -181,11 +186,11 @@ export default function AccountDetails() {
                     ]
                       .filter(Boolean)
                       .join(' · ')}
-                  </Text>
+                  </PrivateText>
                 </View>
-                <Text style={{ fontWeight: '600', color: t.amount > 0 ? colors.positive : colors.text }}>
+                <PrivateText style={{ fontWeight: '600', color: t.amount > 0 ? colors.positive : colors.text }}>
                   {formatMoney(t.amount, 'ILS', true)}
-                </Text>
+                </PrivateText>
               </Pressable>
             ))}
           </Card>
@@ -202,7 +207,7 @@ export default function AccountDetails() {
                 style={[styles.row, { paddingVertical: 10 }, i > 0 && { borderTopWidth: 1, borderTopColor: colors.border }]}
               >
                 <Text style={styles.muted}>{formatDate(s.as_of)}</Text>
-                <Text style={{ fontWeight: '600' }}>{formatMoney(sign * s.balance, account.currency)}</Text>
+                <PrivateText style={{ fontWeight: '600' }}>{formatMoney(sign * s.balance, account.currency)}</PrivateText>
               </View>
             ))}
           </Card>

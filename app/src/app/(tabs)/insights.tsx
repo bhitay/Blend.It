@@ -1,3 +1,4 @@
+import { PrivateText } from '@/components/PrivateText';
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
 import { RefreshControl, ScrollView, View } from 'react-native';
@@ -126,8 +127,8 @@ export default function Insights() {
                 <View style={{ flex: summary.variable, backgroundColor: '#7CC4BC' }} />
               </View>
               <View style={styles.row}>
-                <Text style={[styles.muted, { fontSize: 13 }]}>קבועות {formatMoney(summary.fixed)}</Text>
-                <Text style={[styles.muted, { fontSize: 13 }]}>משתנות {formatMoney(summary.variable)}</Text>
+                <PrivateText style={[styles.muted, { fontSize: 13 }]}>קבועות {formatMoney(summary.fixed)}</PrivateText>
+                <PrivateText style={[styles.muted, { fontSize: 13 }]}>משתנות {formatMoney(summary.variable)}</PrivateText>
               </View>
             </View>
           ) : null}
@@ -145,10 +146,8 @@ export default function Insights() {
                   gap: 4,
                 }}
               >
-                <Text style={{ fontWeight: '700', color: i.level === 'warn' ? colors.warning : i.level === 'good' ? colors.positive : colors.text }}>
-                  {i.title}
-                </Text>
-                <Text style={[styles.muted, { fontSize: 14 }]}>{i.body}</Text>
+                <PrivateText style={{ fontWeight: '700', color: i.level === 'warn' ? colors.warning : i.level === 'good' ? colors.positive : colors.text }}>{i.title}</PrivateText>
+                <PrivateText style={[styles.muted, { fontSize: 14 }]}>{i.body}</PrivateText>
               </Card>
             ))}
           </>
@@ -163,7 +162,7 @@ export default function Insights() {
                   {c.category}
                   {c.isFixed ? <Text style={[styles.muted, { fontSize: 12 }]}> · קבועה</Text> : null}
                 </Text>
-                <Text style={{ fontWeight: '600' }}>{formatMoney(c.amount)}</Text>
+                <PrivateText style={{ fontWeight: '600' }}>{formatMoney(c.amount)}</PrivateText>
               </View>
               <View style={{ height: 6, borderRadius: 3, backgroundColor: colors.border, overflow: 'hidden', flexDirection: 'row' }}>
                 <View style={{ width: `${(c.amount / maxCat) * 100}%`, backgroundColor: c.isFixed ? colors.primary : '#7CC4BC' }} />
@@ -181,7 +180,7 @@ function Stat({ label, value, color }: { label: string; value: number; color?: s
   return (
     <View style={{ flex: 1, gap: 2 }}>
       <Text style={styles.muted}>{label}</Text>
-      <Text style={{ fontWeight: '800', fontSize: 18, color: color ?? colors.text }}>{formatMoney(value)}</Text>
+      <PrivateText style={{ fontWeight: '800', fontSize: 18, color: color ?? colors.text }}>{formatMoney(value)}</PrivateText>
     </View>
   );
 }

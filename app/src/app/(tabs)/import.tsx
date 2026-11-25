@@ -1,3 +1,4 @@
+import { PrivateText } from '@/components/PrivateText';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import * as DocumentPicker from 'expo-document-picker';
 import { useFocusEffect } from 'expo-router';
@@ -379,16 +380,16 @@ function TableSummary({ step }: { step: Extract<Step, { kind: 'table' }> }) {
         </Text>
         <View style={styles.row}>
           <Text style={styles.muted}>{card ? 'זיכויים' : 'נכנס'}</Text>
-          <Text style={{ color: colors.positive, fontWeight: '600' }}>{formatMoney(income)}</Text>
+          <PrivateText style={{ color: colors.positive, fontWeight: '600' }}>{formatMoney(income)}</PrivateText>
         </View>
         <View style={styles.row}>
           <Text style={styles.muted}>{card ? 'חיובים' : 'יצא'}</Text>
-          <Text style={{ fontWeight: '600' }}>{formatMoney(spent)}</Text>
+          <PrivateText style={{ fontWeight: '600' }}>{formatMoney(spent)}</PrivateText>
         </View>
         {balance != null ? (
           <View style={styles.row}>
             <Text style={styles.muted}>{card ? 'חיוב קרוב' : 'יתרה'}</Text>
-            <Text style={{ fontWeight: '600' }}>{formatMoney(card ? -balance : balance)}</Text>
+            <PrivateText style={{ fontWeight: '600' }}>{formatMoney(card ? -balance : balance)}</PrivateText>
           </View>
         ) : null}
         {skipped ? <Text style={[styles.muted, { fontSize: 12 }]}>{skipped} שורות סיכום/כותרת דולגו.</Text> : null}
@@ -402,9 +403,9 @@ function TableSummary({ step }: { step: Extract<Step, { kind: 'table' }> }) {
               <Text numberOfLines={1}>{t.description}</Text>
               <Text style={[styles.muted, { fontSize: 12 }]}>{formatDate(t.date)}</Text>
             </View>
-            <Text style={{ fontWeight: '600', color: t.amount > 0 ? colors.positive : colors.text }}>
+            <PrivateText style={{ fontWeight: '600', color: t.amount > 0 ? colors.positive : colors.text }}>
               {formatMoney(t.amount, 'ILS', true)}
-            </Text>
+            </PrivateText>
           </View>
         ))}
       </Card>
@@ -417,7 +418,7 @@ function ReportSummary({ report }: { report: DocumentReport }) {
     value ? (
       <View style={styles.row} key={label}>
         <Text style={styles.muted}>{label}</Text>
-        <Text style={{ fontWeight: '600' }}>{value}</Text>
+        <PrivateText style={{ fontWeight: '600' }}>{value}</PrivateText>
       </View>
     ) : null;
   const pct = (n: number | null) => (n == null ? null : `${n}%`);
