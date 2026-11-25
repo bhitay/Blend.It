@@ -85,7 +85,7 @@ export default function Settings() {
           <Ionicons name="scan-outline" size={22} color={colors.primary} />
           <View style={{ flex: 1, gap: 2 }}>
             <Text style={{ fontWeight: '600' }}>Face ID</Text>
-            <Text style={[styles.muted, { fontSize: 13 }]}>כניסה, הצגת סכומים ונעילת האפליקציה</Text>
+            <Text style={[styles.muted, { fontSize: 13 }]}>כניסה ונעילת האפליקציה</Text>
           </View>
           <Ionicons name="chevron-back" size={18} color={colors.muted} />
         </Card>

@@ -2,8 +2,8 @@
 //
 // - Amounts are blurred until the user taps the eye. Hidden on every launch and again
 //   whenever the app goes to the background (switching apps, locking the phone).
-// - Optionally (per device, in settings): showing amounts asks for Face ID first,
-//   and the whole app locks behind Face ID on launch and on every return.
+// - Optionally (per device, in settings): the whole app locks behind Face ID on launch
+//   and on every return. The eye itself never asks for Face ID.
 //
 // The Face ID check is local to the device (see deviceAuth.ts): it guards the screen.
 
@@ -14,8 +14,8 @@ import { useSession } from './session';
 
 type PrivacyState = {
   hidden: boolean;
-  /** Show / hide amounts. Showing may ask for Face ID; must be called from a tap. */
-  toggle: () => Promise<void>;
+  /** Show / hide amounts. */
+  toggle: () => void;
   hide: () => void;
   /** App lock is on and the app is currently locked. */
   locked: boolean;
@@ -26,14 +26,13 @@ type PrivacyState = {
   signedInJustNow: () => void;
 };
 
-const noop = async () => {};
 const Ctx = createContext<PrivacyState>({
   hidden: false,
-  toggle: noop,
+  toggle: () => {},
   hide: () => {},
   locked: false,
   unlock: async () => true,
-  settings: { revealRequiresFaceId: false, appLock: false },
+  settings: { appLock: false },
   updateSettings: () => {},
   signedInJustNow: () => {},
 });
@@ -51,15 +50,7 @@ export function PrivacyProvider({ children }: { children: ReactNode }) {
     if (settingsRef.current.appLock) setLocked(true);
   }, []);
 
-  const toggle = useCallback(async () => {
-    if (!hidden) {
-      setHidden(true);
-      return;
-    }
-    // Call straight from the tap: browsers only allow Face ID prompts from a user gesture.
-    if (settingsRef.current.revealRequiresFaceId && !(await verifyUser())) return;
-    setHidden(false);
-  }, [hidden]);
+  const toggle = useCallback(() => setHidden((h) => !h), []);
 
   const unlock = useCallback(async () => {
     const ok = await verifyUser();

@@ -21,10 +21,12 @@ test('text around amounts stays readable; percentages, dates and counts are not 
   assert.equal(splitMoney(`קבועות ${fmt(5200)}`).filter((p) => p.money).length, 1);
 });
 
-test('the placeholder keeps the shape but none of the real digits', () => {
-  const real = fmt(1915750);
-  const fake = placeholderFor(real);
-  assert.equal(fake.length, real.length);
-  assert.equal(fake.replace(/\d/g, '#'), real.replace(/\d/g, '#'));
-  assert.notEqual(fake.replace(/\D/g, ''), real.replace(/\D/g, ''));
+test('a hidden amount shows "*****": no digits, no sign, same size for every amount', () => {
+  for (const real of [fmt(1915750), fmt(-905000), fmt(42), fmt(-312.4, 'ILS', true), '₪15,100', fmt(-19.99, 'USD', true)]) {
+    const fake = placeholderFor(real);
+    assert.doesNotMatch(fake, /\d|-/, real);
+    assert.match(fake, /\*{5}/);
+    assert.match(fake, /[₪$]/, 'currency symbol kept');
+  }
+  assert.equal(placeholderFor(fmt(42)).replace(/[^*]/g, ''), placeholderFor(fmt(1915750)).replace(/[^*]/g, ''));
 });
