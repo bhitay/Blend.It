@@ -38,11 +38,18 @@ export default function JoinRequests() {
       load();
     }, [load]),
   );
+  // Reload when membership changes (e.g. a request was approved from the other copy of this card).
   useEffect(() => {
-    if (!isOwner || !household.invite_open) return;
-    const t = setInterval(load, 15000);
+    load();
+  }, [load, members.length]);
+
+  // While there is room in the household a request can arrive at any time: check every few seconds.
+  const hasRoom = members.length < household.max_members;
+  useEffect(() => {
+    if (!isOwner || !hasRoom) return;
+    const t = setInterval(load, 8000);
     return () => clearInterval(t);
-  }, [isOwner, household.invite_open, load]);
+  }, [isOwner, hasRoom, load]);
 
   if (!isOwner || requests.length === 0) return null;
 

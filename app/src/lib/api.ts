@@ -2,7 +2,14 @@ import { supabase } from './supabase';
 import { KINDS, type AccountKind } from './accountKinds';
 import { todayISO } from './format';
 
-export type Household = { id: string; name: string; invite_code: string; invite_open: boolean; max_members: number };
+export type Household = {
+  id: string;
+  name: string;
+  invite_code: string;
+  invite_open: boolean;
+  invite_expires_at: string | null;
+  max_members: number;
+};
 export type Member = { user_id: string; display_name: string; role: 'owner' | 'member' };
 
 export type Account = {
@@ -55,7 +62,7 @@ export async function fetchHousehold(userId: string): Promise<Household | null> 
   const rows = check(
     await supabase
       .from('household_members')
-      .select('households(id, name, invite_code, invite_open, max_members)')
+      .select('households(id, name, invite_code, invite_open, invite_expires_at, max_members)')
       .eq('user_id', userId)
       .order('joined_at')
       .limit(1),
@@ -77,9 +84,16 @@ export async function createHousehold(name: string, memberName: string): Promise
   check(await supabase.rpc('create_household', { household_name: name, member_name: memberName }));
 }
 
-/** Owner only: issues a new invite code (the old one stops working). */
-export async function regenerateInvite(householdId: string): Promise<void> {
-  check(await supabase.rpc('regenerate_invite', { hid: householdId }));
+/** Owner only: a new one-time invite code, valid for 15 minutes (replaces any earlier one). */
+export async function createInvite(householdId: string): Promise<void> {
+  const res = await supabase.rpc('create_invite', { hid: householdId });
+  if (res.error?.message.includes('household is full')) throw new Error('משק הבית מלא');
+  check(res);
+}
+
+/** Owner only: withdraw the current invite code. */
+export async function revokeInvite(householdId: string): Promise<void> {
+  check(await supabase.rpc('revoke_invite', { hid: householdId }));
 }
 
 /**
@@ -88,7 +102,7 @@ export async function regenerateInvite(householdId: string): Promise<void> {
  */
 export async function requestJoin(code: string, memberName: string): Promise<'pending' | 'member'> {
   const res = await supabase.rpc('request_join', { code, member_name: memberName });
-  if (res.error?.message.includes('invalid invite code')) throw new Error('קוד ההזמנה לא נמצא, או שמשק הבית כבר מלא');
+  if (res.error?.message.includes('invalid invite code')) throw new Error('הקוד לא תקין, פג תוקפו, או שכבר השתמשו בו. בקשו קוד חדש.');
   return check(res) as 'pending' | 'member';
 }
 

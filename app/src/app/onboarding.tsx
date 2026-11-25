@@ -109,8 +109,8 @@ export default function Onboarding() {
         </Card>
       ) : null}
       <Text style={styles.muted}>
-        משק בית הוא המקום המשותף לשניכם. אחד יוצר אותו, והשני מבקש להצטרף עם קוד ההזמנה שמופיע בהגדרות. ההצטרפות
-        נכנסת לתוקף רק אחרי שמנהל משק הבית מאשר אותה.
+        משק בית הוא המקום המשותף לשניכם. אחד יוצר אותו, ויוצר קוד הזמנה חד-פעמי בהגדרות ← הוספת חבר. השני מזין את
+        הקוד כאן, וההצטרפות נכנסת לתוקף רק אחרי שמנהל משק הבית מאשר אותה.
       </Text>
       <Chips
         options={[
@@ -125,7 +125,7 @@ export default function Onboarding() {
         {mode === 'create' ? (
           <Field label="שם משק הבית" value={householdName} onChangeText={setHouseholdName} placeholder="למשל: הבית שלנו" />
         ) : (
-          <Field label="קוד הזמנה" value={code} onChangeText={setCode} autoCapitalize="characters" placeholder="12 תווים" />
+          <Field label="קוד הזמנה" value={code} onChangeText={setCode} autoCapitalize="characters" placeholder="XXXX-XXXX-XXXX" />
         )}
         <ErrorText>{error}</ErrorText>
         <Button title={mode === 'create' ? 'יצירה' : 'שליחת בקשה להצטרפות'} onPress={submit} loading={busy} />
