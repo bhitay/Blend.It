@@ -19,10 +19,9 @@ export function splitMoney(text: string): TextPart[] {
 }
 
 /**
- * What a hidden amount renders as: the same shape with made-up digits, so the real
- * number is not in the page at all (not even under the blur, or when text is copied).
+ * What a hidden amount renders as: the currency symbol stays, the number (and its
+ * sign) becomes a fixed "*****", so neither the value nor its size is shown.
  */
 export function placeholderFor(amount: string): string {
-  let i = 0;
-  return amount.replace(/\d/g, () => '8632514790'[i++ % 10]);
+  return amount.replace(/[\u200e\u200f]*-?[\u200e\u200f]*\d[\d,]*(?:\.\d+)?/, '*****');
 }

@@ -1,6 +1,6 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { useState } from 'react';
-import { View } from 'react-native';
+import { useEffect, useRef, useState } from 'react';
+import { Platform, View } from 'react-native';
 import { usePrivacy } from '@/lib/privacy';
 import { supabase } from '@/lib/supabase';
 import { Button, colors, Screen, Text, styles } from './ui';
@@ -17,6 +17,23 @@ export default function LockScreen() {
     setFailed(!ok);
     setBusy(false);
   }
+
+  // Ask for Face ID by itself as soon as the screen is visible, so it takes one tap
+  // (iOS's own "Continue") instead of two. If the browser only allows it after a tap,
+  // the request quietly fails and the button below is there.
+  const autoTried = useRef(false);
+  useEffect(() => {
+    if (Platform.OS !== 'web' || typeof document === 'undefined') return;
+    const attempt = () => {
+      if (autoTried.current || document.visibilityState !== 'visible') return;
+      autoTried.current = true;
+      setBusy(true);
+      unlock().finally(() => setBusy(false));
+    };
+    attempt();
+    document.addEventListener('visibilitychange', attempt);
+    return () => document.removeEventListener('visibilitychange', attempt);
+  }, [unlock]);
 
   return (
     <Screen edges={['top', 'bottom']} scroll={false}>

@@ -1,18 +1,13 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { Children, type ReactNode } from 'react';
-import { Platform, Pressable, Text as RNText, type TextProps } from 'react-native';
+import { Pressable, Text as RNText, type TextProps } from 'react-native';
 import { placeholderFor, splitMoney } from '@/lib/moneyText';
 import { usePrivacy } from '@/lib/privacy';
 import { colors, Text } from './ui';
 
-const blurStyle =
-  Platform.OS === 'web'
-    ? ({ filter: 'blur(7px)', userSelect: 'none', display: 'inline-block' } as object)
-    : ({ opacity: 0.25 } as object);
-
 /**
- * Text that may contain amounts. In privacy mode every amount in it is blurred
- * (and replaced by made-up digits underneath); the rest of the text stays readable.
+ * Text that may contain amounts. In privacy mode every amount in it becomes "*****"
+ * (the real number is not in the page at all); the rest of the text stays readable.
  */
 export function PrivateText({ children, accessibilityLabel, ...rest }: TextProps & { children?: ReactNode }) {
   const { hidden } = usePrivacy();
@@ -32,8 +27,8 @@ export function PrivateText({ children, accessibilityLabel, ...rest }: TextProps
     <Text {...rest} accessibilityLabel={parts.map((p) => (p.money ? 'סכום מוסתר' : p.text)).join('')}>
       {parts.map((p, i) =>
         p.money ? (
-          <RNText key={i} style={blurStyle as never} aria-hidden>
-            {Platform.OS === 'web' ? placeholderFor(p.text) : '•'.repeat(Math.max(4, p.text.replace(/\D/g, '').length))}
+          <RNText key={i} aria-hidden>
+            {placeholderFor(p.text)}
           </RNText>
         ) : (
           p.text

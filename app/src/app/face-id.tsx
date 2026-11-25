@@ -75,7 +75,7 @@ export default function FaceIdSettings() {
   }
 
   /** Turning an on-device option on or off always needs Face ID (so nobody else can switch it off). */
-  async function setOption(key: 'revealRequiresFaceId' | 'appLock', value: boolean) {
+  async function setOption(key: 'appLock', value: boolean) {
     setError(null);
     try {
       const hasCredential = hasDeviceCredential() || (passkeys?.length ?? 0) > 0;
@@ -126,17 +126,6 @@ export default function FaceIdSettings() {
       <Card style={{ gap: 0, paddingVertical: 4 }}>
         <View style={[styles.row, { paddingVertical: 12 }]}>
           <View style={{ flex: 1, gap: 2 }}>
-            <Text style={{ fontWeight: '600' }}>Face ID להצגת סכומים</Text>
-            <Text style={[styles.muted, { fontSize: 13 }]}>לחיצה על העין תבקש Face ID לפני שהסכומים מוצגים.</Text>
-          </View>
-          <Switch
-            value={settings.revealRequiresFaceId}
-            onValueChange={(v) => setOption('revealRequiresFaceId', v)}
-            trackColor={{ true: colors.primary }}
-          />
-        </View>
-        <View style={[styles.row, { paddingVertical: 12, borderTopWidth: 1, borderTopColor: colors.border }]}>
-          <View style={{ flex: 1, gap: 2 }}>
             <Text style={{ fontWeight: '600' }}>נעילת האפליקציה</Text>
             <Text style={[styles.muted, { fontSize: 13 }]}>Face ID בכל פתיחה ובכל חזרה לאפליקציה, לפני שמשהו מוצג.</Text>
           </View>
@@ -144,8 +133,8 @@ export default function FaceIdSettings() {
         </View>
       </Card>
       <Text style={[styles.muted, { fontSize: 12 }]}>
-        שתי האפשרויות האלה נבדקות במכשיר עצמו ומגינות על המסך, למשל כשמישהו מחזיק את הטלפון הפתוח. הנתונים עצמם מוגנים
-        בהתחברות ובאימות הדו-שלבי.
+        הנעילה נבדקת במכשיר עצמו ומגינה על המסך, למשל כשמישהו מחזיק את הטלפון הפתוח. הנתונים עצמם מוגנים בהתחברות
+        ובאימות הדו-שלבי.
       </Text>
       <ErrorText>{error}</ErrorText>
     </Screen>

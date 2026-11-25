@@ -1,8 +1,8 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, View } from 'react-native';
 import { Button, Card, colors, ErrorText, Field, Screen, Text, styles } from '@/components/ui';
 import { isAvailable } from '@/lib/deviceAuth';
-import { signInWithPasskey } from '@/lib/passkeys';
+import { offerPasskeyAutofill, signInWithPasskey } from '@/lib/passkeys';
 import { usePrivacy } from '@/lib/privacy';
 import { supabase } from '@/lib/supabase';
 
@@ -16,12 +16,21 @@ export default function SignIn() {
   const [faceId, setFaceId] = useState(false);
   const { signedInJustNow } = usePrivacy();
 
+  // Passkey suggestion above the keyboard on the email field (no extra iOS sheet).
+  const autofill = useRef<AbortController | null>(null);
   useEffect(() => {
     isAvailable().then(setFaceId);
-  }, []);
+    const ctrl = new AbortController();
+    autofill.current = ctrl;
+    offerPasskeyAutofill(ctrl.signal).then((ok) => {
+      if (ok) signedInJustNow();
+    });
+    return () => ctrl.abort();
+  }, [signedInJustNow]);
 
   async function passkey() {
     setError(null);
+    autofill.current?.abort(); // only one Face ID request at a time
     setBusy(true);
     try {
       await signInWithPasskey();
@@ -68,7 +77,7 @@ export default function SignIn() {
             value={email}
             onChangeText={setEmail}
             autoCapitalize="none"
-            autoComplete="email"
+            autoComplete={(faceId ? 'username webauthn' : 'email') as 'email'}
             keyboardType="email-address"
             textContentType="emailAddress"
           />

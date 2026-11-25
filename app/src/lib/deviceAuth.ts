@@ -1,4 +1,4 @@
-// Face ID on this device, for the privacy eye (option A) and the app lock (option B).
+// Face ID on this device, for the app lock.
 //
 // This is a local check: the browser asks the phone to verify the user (Face ID,
 // Touch ID or the device passcode) with a passkey for this site, and we accept only
@@ -15,9 +15,9 @@ import { fromBase64Url, toBase64Url, userVerified } from './uv';
 const KEY_SETTINGS = 'blendit.deviceAuth';
 const KEY_CREDENTIAL = 'blendit.deviceAuth.credential';
 
-export type DeviceAuthSettings = { revealRequiresFaceId: boolean; appLock: boolean };
+export type DeviceAuthSettings = { appLock: boolean };
 
-const DEFAULTS: DeviceAuthSettings = { revealRequiresFaceId: false, appLock: false };
+const DEFAULTS: DeviceAuthSettings = { appLock: false };
 
 function storage(): Storage | null {
   try {
@@ -30,7 +30,7 @@ function storage(): Storage | null {
 export function getSettings(): DeviceAuthSettings {
   try {
     const raw = storage()?.getItem(KEY_SETTINGS);
-    return raw ? { ...DEFAULTS, ...JSON.parse(raw) } : DEFAULTS;
+    return raw ? { appLock: Boolean(JSON.parse(raw).appLock) } : DEFAULTS;
   } catch {
     return DEFAULTS;
   }

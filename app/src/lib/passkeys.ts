@@ -28,6 +28,23 @@ export async function signInWithPasskey(): Promise<void> {
   if (error) throw new Error(friendly(error.message));
 }
 
+/**
+ * Offers the passkey in the keyboard's suggestion bar (iOS) / the autofill list when the
+ * email field is focused. Picking it goes straight to Face ID, without the extra sheet.
+ * Resolves true on sign-in, false if unavailable, cancelled or aborted.
+ */
+export async function offerPasskeyAutofill(signal: AbortSignal): Promise<boolean> {
+  try {
+    const PKC = (globalThis as { PublicKeyCredential?: { isConditionalMediationAvailable?: () => Promise<boolean> } })
+      .PublicKeyCredential;
+    if (!PKC?.isConditionalMediationAvailable || !(await PKC.isConditionalMediationAvailable())) return false;
+    const { data, error } = await supabase.auth.signInWithPasskey({ options: { mediation: 'conditional', signal } });
+    return !error && Boolean(data?.session);
+  } catch {
+    return false;
+  }
+}
+
 export async function listPasskeys(): Promise<Passkey[]> {
   const { data, error } = await supabase.auth.passkey.list();
   if (error) throw new Error(friendly(error.message));
